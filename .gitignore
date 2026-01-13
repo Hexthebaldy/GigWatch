@@ -2,3 +2,6 @@
 config/monitoring.json
 data/
 logs/
+node_modules/
+bun.lockb
+.DS_Store
