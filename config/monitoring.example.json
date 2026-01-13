@@ -1,0 +1,36 @@
+{
+  "app": {
+    "timezone": "Asia/Shanghai",
+    "daysAhead": 30,
+    "reportWindowHours": 24
+  },
+  "monitoring": {
+    "cities": ["北京", "上海"],
+    "categories": ["演唱会", "音乐会"],
+    "subCategories": ["流行"],
+    "keywords": ["巡演", "演唱会"],
+    "focusArtists": ["周杰伦", "五月天"],
+    "profiles": [
+      {
+        "name": "北上广演唱会",
+        "filters": {
+          "cities": ["北京", "上海", "广州"],
+          "categories": ["演唱会"],
+          "subCategories": ["流行"],
+          "artists": [],
+          "keywords": []
+        }
+      }
+    ]
+  },
+  "damai": {
+    "pageSize": 30,
+    "sortType": 2,
+    "channels": ["10001", "10002"],
+    "dateType": 4
+  },
+  "search": {
+    "recency": "month",
+    "siteAllowList": []
+  }
+}
