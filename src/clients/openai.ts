@@ -28,11 +28,11 @@ export const generateReportWithModel = async (input: {
     {
       role: "system",
       content:
-        "你是演出监控日报助手。请输出严格符合 DailyReport 结构的 JSON，不要包含多余字段。Chinese output."
+        "你是演出监控日报助手。请输出严格符合 DailyReport 结构的 JSON，不要包含多余字段。字段仅包含 runAt, timezone, summary, focusArtists, events。Chinese output."
     },
     {
       role: "user",
-      content: `生成演出监控日报，字段：runAt, timezone, summary(3-5句), highlights(3-8条), focusArtists(每个艺人含 events 列表，事件含 title/url/city/site/showTime/price)，events(原始演出列表)。
+      content: `生成演出监控日报，字段：runAt, timezone, summary(3-5句), focusArtists(每个艺人含 events 列表，事件含 title/url/city/site/showTime/price)，events(原始演出列表)。
 runAt: ${input.runAt}
 timezone: ${input.timezone}
 Events: ${JSON.stringify(input.events)}

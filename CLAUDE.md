@@ -35,7 +35,7 @@ bun run daily
 1. **Queries** (`config/monitoring.json`) define ShowStart列表抓取参数（cityCode / keyword / 自定义 URL）
 2. **ShowStart scraper** (`src/clients/showstart.ts`) 请求列表页、解析 `window.__NUXT__` 中的 `listData`
 3. **Database** (`src/db/`) 存储演出数据与搜索日志，并存档日报
-4. **Report generation** (`src/jobs/dailyReport.ts`) 汇总最近窗口内的演出，匹配关注艺人，生成摘要/高亮
+4. **Report generation** (`src/jobs/dailyReport.ts`) 汇总最近窗口内的演出，匹配关注艺人，生成摘要
 5. **Web server** (`src/server.ts`) 提供简单 UI + API 触发抓取、查看最新日报与搜索日志
 
 ### Key Components
@@ -58,7 +58,7 @@ bun run daily
 
 **Report Generation** (`src/jobs/dailyReport.ts`)
 - For each configured query, scrape ShowStart, upsert events, log the search
-- Build heuristic report: city counts as highlights; focus artists matched against title/performers; summary text
+- Build heuristic report: focus artists matched against title/performers; summary text（不再输出城市高频高亮）
 
 **Web UI** (`src/server.ts`)
 - Endpoints: `GET /api/report/latest`, `GET /api/logs`, `POST /api/run`, `GET /api/config`, `POST /api/config/query`, `POST /api/config/focus`

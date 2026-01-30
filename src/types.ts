@@ -39,7 +39,6 @@ export type DailyReport = {
   runAt: string;
   timezone: string;
   summary: string;
-  highlights: string[];
   focusArtists: Array<{
     artist: string;
     events: Array<{

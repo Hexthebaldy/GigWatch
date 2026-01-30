@@ -138,20 +138,6 @@ const buildFocusEvents = (events: ShowStartEvent[], focusArtists: string[]) => {
   });
 };
 
-// 提炼演出最多的前若干城市
-const buildHighlights = (events: ShowStartEvent[]) => {
-  const byCity = new Map<string, number>();
-  for (const evt of events) {
-    const city = evt.cityName || "未知";
-    byCity.set(city, (byCity.get(city) || 0) + 1);
-  }
-
-  return [...byCity.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([city, count]) => `${city} ${count} 场`);
-};
-
 // 本地兜底日报，不依赖模型
 export const buildHeuristicReport = (events: ShowStartEvent[], timezone: string, focusArtists: string[]): DailyReport => {
   const focus = buildFocusEvents(events, focusArtists);
@@ -165,7 +151,6 @@ export const buildHeuristicReport = (events: ShowStartEvent[], timezone: string,
       (sum, item) => sum + item.events.length,
       0
     )} 条。`,
-    highlights: buildHighlights(events),
     focusArtists: focus,
     events
   };

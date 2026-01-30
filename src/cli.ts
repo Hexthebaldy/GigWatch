@@ -27,12 +27,6 @@ const main = async () => {
     console.log("\n=== GigWatch Daily Report (ShowStart) ===");
     console.log(`Run at: ${report.runAt} (${report.timezone})`);
     console.log("\nSummary:\n", report.summary);
-    if (report.highlights.length > 0) {
-      console.log("\nHighlights:");
-      for (const item of report.highlights) {
-        console.log("-", item);
-      }
-    }
     if (report.focusArtists.length > 0) {
       console.log("\nFocus Artists:");
       for (const artist of report.focusArtists) {

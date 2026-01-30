@@ -97,9 +97,8 @@ const indexHtml = `
 
       const renderReport = (data) => {
         if (!data) { reportEl.innerHTML = '<p class="muted">暂无报告</p>'; return; }
-        const highlights = data.highlights.map(h => '<li>' + h + '</li>').join('');
         const focus = data.focusArtists.map(f => '<li><strong>' + f.artist + '</strong>: ' + (f.events.map(e => e.title).join(' / ') || '无') + '</li>').join('');
-        reportEl.innerHTML = '<div class="card"><div><strong>运行时间：</strong>' + data.runAt + ' (' + data.timezone + ')</div><div><strong>摘要：</strong>' + data.summary + '</div><div><strong>要点：</strong><ul>' + highlights + '</ul></div><div><strong>关注艺人：</strong><ul>' + focus + '</ul></div><div class="muted">共 ' + data.events.length + ' 条演出</div></div>';
+        reportEl.innerHTML = '<div class="card"><div><strong>运行时间：</strong>' + data.runAt + ' (' + data.timezone + ')</div><div><strong>摘要：</strong>' + data.summary + '</div><div><strong>关注艺人：</strong><ul>' + focus + '</ul></div><div class="muted">共 ' + data.events.length + ' 条演出</div></div>';
       };
 
       const renderLogs = (logs) => {

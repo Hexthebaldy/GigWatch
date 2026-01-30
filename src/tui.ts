@@ -43,8 +43,6 @@ const printReport = (report: DailyReport | null) => {
   }
   console.log(`\n=== 日报 @ ${report.runAt} (${report.timezone}) ===`);
   console.log(report.summary);
-  console.log("要点:");
-  for (const h of report.highlights) console.log(" -", h);
   console.log("关注艺人:");
   for (const fa of report.focusArtists) {
     const titles = fa.events.map((e) => e.title).join(" / ") || "无";
