@@ -138,25 +138,7 @@ const buildFocusEvents = (events: ShowStartEvent[], focusArtists: string[]) => {
   });
 };
 
-// 本地兜底日报，不依赖模型
-export const buildHeuristicReport = (events: ShowStartEvent[], timezone: string, focusArtists: string[]): DailyReport => {
-  const focus = buildFocusEvents(events, focusArtists);
-  const total = events.length;
-  const cities = new Set(events.map((evt) => evt.cityName || "未知"));
-
-  return {
-    runAt: nowInTz(timezone),
-    timezone,
-    summary: `今日共抓取 ${total} 条秀动演出，覆盖 ${cities.size} 个城市。关注艺人相关场次 ${focus.reduce(
-      (sum, item) => sum + item.events.length,
-      0
-    )} 条。`,
-    focusArtists: focus,
-    events
-  };
-};
-
-// 每日主流程：抓取、落库、记日志、生成日报（模型或本地兜底）、保存日报
+// 每日主流程：抓取、落库、记日志、生成日报（优先模型，缺省则返回空摘要）、保存日报
 export const runDailyReport = async (db: Database, config: MonitoringConfig, env?: AppEnv) => {
   const timezone = config.app?.timezone || "Asia/Shanghai";
   const reportWindowHours = config.app?.reportWindowHours || 24;
@@ -195,7 +177,6 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
   const since = new Date(Date.now() - reportWindowHours * 60 * 60 * 1000).toISOString();
   const events = loadRecentEvents(db, since);
 
-  const heuristic = () => buildHeuristicReport(events, timezone, config.monitoring.focusArtists || []);
   const report = await generateReportWithModel({
     timezone,
     runAt: nowInTz(timezone),
@@ -207,7 +188,13 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
       )
     })),
     env: env || { timezone, dbPath: "", serverPort: 0 },
-    fallback: heuristic
+    fallback: () => ({
+      runAt: nowInTz(timezone),
+      timezone,
+      summary: "未调用模型，未生成摘要。",
+      focusArtists: [],
+      events
+    })
   });
 
   storeReport(db, report);

@@ -63,7 +63,7 @@ FocusArtists: ${JSON.stringify(
     const json = extractJson(content);
     return JSON.parse(json) as DailyReport;
   } catch (error) {
-    console.error("OpenAI report generation failed, fallback to heuristic:", error);
+    console.error("OpenAI report generation failed, fallback to empty report:", error);
     return input.fallback();
   }
 };

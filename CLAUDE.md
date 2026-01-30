@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GigWatch is a Bun.js-based monitoring agent that scrapes ShowStart (秀动)演出列表、保存结果到 SQLite，并生成启发式日报。支持 CLI 和 Web UI，关注艺人配置与搜索日志落盘。
+GigWatch is a Bun.js-based monitoring agent that scrapes ShowStart (秀动)演出列表、保存结果到 SQLite，并生成模型驱动的日报。支持 CLI 和 Web UI，关注艺人配置与搜索日志落盘。
 
 ## Commands
 
@@ -58,7 +58,7 @@ bun run daily
 
 **Report Generation** (`src/jobs/dailyReport.ts`)
 - For each configured query, scrape ShowStart, upsert events, log the search
-- Build heuristic report: focus artists matched against title/performers; summary text（不再输出城市高频高亮）
+- Generate report via model (Kimi/OpenAI-compatible); fallback is empty summary（不再输出城市高频高亮）
 
 **Web UI** (`src/server.ts`)
 - Endpoints: `GET /api/report/latest`, `GET /api/logs`, `POST /api/run`, `GET /api/config`, `POST /api/config/query`, `POST /api/config/focus`
