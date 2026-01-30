@@ -1,6 +1,8 @@
 import type { Database } from "bun:sqlite";
+import type { AppEnv } from "../config";
 import type { DailyReport, MonitoringConfig, ShowStartEvent } from "../types";
 import { fetchShowStartEvents } from "../clients/showstart";
+import { generateReportWithModel } from "../clients/openai";
 import { nowInTz, toIso } from "../utils";
 
 const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => {
@@ -139,7 +141,7 @@ const buildHighlights = (events: ShowStartEvent[]) => {
     .map(([city, count]) => `${city} ${count} 场`);
 };
 
-const buildReport = (events: ShowStartEvent[], timezone: string, focusArtists: string[]): DailyReport => {
+export const buildHeuristicReport = (events: ShowStartEvent[], timezone: string, focusArtists: string[]): DailyReport => {
   const focus = buildFocusEvents(events, focusArtists);
   const total = events.length;
   const cities = new Set(events.map((evt) => evt.cityName || "未知"));
@@ -157,7 +159,7 @@ const buildReport = (events: ShowStartEvent[], timezone: string, focusArtists: s
   };
 };
 
-export const runDailyReport = async (db: Database, config: MonitoringConfig) => {
+export const runDailyReport = async (db: Database, config: MonitoringConfig, env?: AppEnv) => {
   const timezone = config.app?.timezone || "Asia/Shanghai";
   const reportWindowHours = config.app?.reportWindowHours || 24;
   const fetchedAt = toIso(new Date());
@@ -194,7 +196,22 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig) => 
 
   const since = new Date(Date.now() - reportWindowHours * 60 * 60 * 1000).toISOString();
   const events = loadRecentEvents(db, since);
-  const report = buildReport(events, timezone, config.monitoring.focusArtists || []);
+
+  const heuristic = () => buildHeuristicReport(events, timezone, config.monitoring.focusArtists || []);
+  const report = await generateReportWithModel({
+    timezone,
+    runAt: nowInTz(timezone),
+    events,
+    focusArtists: (config.monitoring.focusArtists || []).map((artist) => ({
+      artist,
+      events: events.filter(
+        (evt) => evt.title?.toLowerCase().includes(artist.toLowerCase()) || evt.performers?.toLowerCase().includes(artist.toLowerCase())
+      )
+    })),
+    env: env || { timezone, dbPath: "", serverPort: 0 },
+    fallback: heuristic
+  });
+
   storeReport(db, report);
   return report;
 };

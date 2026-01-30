@@ -10,5 +10,7 @@
     "tui": "bun run src/cli.ts tui",
     "lint": "bun --check src/config.ts src/db/schema.ts src/db/client.ts src/clients/showstart.ts src/jobs/dailyReport.ts src/server.ts src/utils.ts src/tui.ts"
   },
-  "dependencies": {}
+  "dependencies": {
+    "openai": "^4.56.0"
+  }
 }

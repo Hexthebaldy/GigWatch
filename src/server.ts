@@ -206,7 +206,7 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
     if (isRunning) return null;
     isRunning = true;
     try {
-      return await runDailyReport(db, configRef.current);
+      return await runDailyReport(db, configRef.current, env);
     } finally {
       isRunning = false;
     }

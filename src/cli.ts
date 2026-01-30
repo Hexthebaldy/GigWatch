@@ -23,7 +23,7 @@ const main = async () => {
 
   if (command === "daily") {
     const config = loadConfig();
-    const report = await runDailyReport(db, config);
+    const report = await runDailyReport(db, config, env);
     console.log("\n=== GigWatch Daily Report (ShowStart) ===");
     console.log(`Run at: ${report.runAt} (${report.timezone})`);
     console.log("\nSummary:\n", report.summary);

@@ -98,7 +98,7 @@ export const startTui = async () => {
       printLogs(loadLogs(db));
     } else if (choice === "3") {
       console.log("抓取中...");
-      const report = await runDailyReport(db, config);
+      const report = await runDailyReport(db, config, loadEnv());
       printReport(report);
     } else if (choice === "4") {
       const name = await ask("名称: ");
