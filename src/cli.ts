@@ -3,11 +3,12 @@ import { openDb } from "./db/client";
 import { initSchema } from "./db/schema";
 import { runDailyReport } from "./jobs/dailyReport";
 import { startServer } from "./server";
+import { startTui } from "./tui";
 
 const main = async () => {
   const command = Bun.argv[2];
   if (!command) {
-    console.error("Usage: bun run src/cli.ts <init-db|daily|serve>");
+    console.error("Usage: bun run src/cli.ts <init-db|daily|serve|tui>");
     process.exit(1);
   }
 
@@ -50,6 +51,11 @@ const main = async () => {
   if (command === "serve") {
     const config = loadConfig();
     startServer(db, config, env);
+    return;
+  }
+
+  if (command === "tui") {
+    await startTui();
     return;
   }
 

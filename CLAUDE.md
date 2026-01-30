@@ -60,8 +60,11 @@ bun run daily
 - Build heuristic report: city counts as highlights; focus artists matched against title/performers; summary text
 
 **Web UI** (`src/server.ts`)
-- Endpoints: `GET /api/report/latest`, `GET /api/logs`, `POST /api/run`
-- `GET /` serves a lightweight HTML dashboard to trigger runs and view latest data
+- Endpoints: `GET /api/report/latest`, `GET /api/logs`, `POST /api/run`, `GET /api/config`, `POST /api/config/query`, `POST /api/config/focus`
+- `GET /` serves a lightweight dashboard to触发抓取/查看日报/编辑监听；带每日 06:00 自动调度（服务器时区）
+
+**TUI** (`src/tui.ts`)
+- CLI 菜单：查看日报、查看日志、立即抓取、新增查询、设置关注艺人、查看当前查询
 
 ### Timezone Handling
 - All timestamps use the configured timezone (default: Asia/Shanghai)

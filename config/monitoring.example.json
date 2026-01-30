@@ -4,7 +4,10 @@
     "reportWindowHours": 24
   },
   "monitoring": {
-    "focusArtists": ["加木", "周杰伦"],
+    "focusArtists": [
+      "加木",
+      "周杰伦"
+    ],
     "queries": [
       {
         "name": "上海-加木",

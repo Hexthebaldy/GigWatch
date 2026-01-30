@@ -11,14 +11,18 @@ export type AppEnv = {
 };
 
 export const loadConfig = (): MonitoringConfig => {
-  const configPath = Bun.env.CONFIG_PATH || DEFAULT_CONFIG_PATH;
-  const fullPath = resolve(process.cwd(), configPath);
+  const fullPath = getConfigPath();
   try {
     const raw = readFileSync(fullPath, "utf-8");
     return JSON.parse(raw) as MonitoringConfig;
   } catch (error) {
     throw new Error(`Failed to load config at ${fullPath}: ${String(error)}`);
   }
+};
+
+export const getConfigPath = () => {
+  const configPath = Bun.env.CONFIG_PATH || DEFAULT_CONFIG_PATH;
+  return resolve(process.cwd(), configPath);
 };
 
 export const loadEnv = (): AppEnv => {

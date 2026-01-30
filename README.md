@@ -33,10 +33,15 @@ bun run daily
 ```bash
 bun run serve
 ```
+- 启动交互式 TUI（管理配置、查看日志/日报）
+```bash
+bun run tui
+```
 
 ## Config / Env
 - 配置示例：`config/monitoring.example.json`
 - 环境变量：`APP_TIMEZONE`（默认 Asia/Shanghai），`DB_PATH`（默认 ./data/gigwatch.sqlite），`APP_PORT`（Web 端口，默认 3000），`CONFIG_PATH`（自定义配置路径）
+- Web 服务自带调度：每天 06:00（服务器时区）自动跑抓取，可在页面手动触发并编辑监听/关注艺人
 
 ## Scheduling
 用 cron 等调度每日运行一次，例如：
