@@ -68,7 +68,7 @@ const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => 
 
 const logSearch = (
   db: Database,
-  options: { name: string; url: string; cityCode?: string; keyword?: string },
+  options: { name?: string; url: string; cityCode?: string; keyword?: string },
   fetchedAt: string,
   resultsCount: number
 ) => {
@@ -77,14 +77,18 @@ const logSearch = (
     VALUES (@query_name, @url, @city_code, @keyword, @run_at, @results_count)
   `);
 
-  stmt.run({
-    query_name: options.name,
-    url: options.url,
-    city_code: options.cityCode || "",
-    keyword: options.keyword || "",
-    run_at: fetchedAt,
-    results_count: resultsCount
-  });
+  try {
+    stmt.run({
+      query_name: options.name || "unknown",
+      url: options.url,
+      city_code: options.cityCode || "",
+      keyword: options.keyword || "",
+      run_at: fetchedAt,
+      results_count: resultsCount
+    });
+  } catch (error) {
+    console.error("Failed to log search", error);
+  }
 };
 
 const loadRecentEvents = (db: Database, sinceIso: string): ShowStartEvent[] => {
