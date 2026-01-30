@@ -1,145 +1,160 @@
 import type { Database } from "bun:sqlite";
-import type { DamaiProject, DailyReport } from "../types";
-import type { MonitoringConfig } from "../types";
-import { searchDamaiProjects } from "../clients/damai";
-import { searchBaidu } from "../clients/baidu";
-import { generateReportWithModel } from "../clients/openai";
+import type { DailyReport, MonitoringConfig, ShowStartEvent } from "../types";
+import { fetchShowStartEvents } from "../clients/showstart";
 import { nowInTz, toIso } from "../utils";
 
-const upsertProject = (db: Database, project: DamaiProject, fetchedAt: string) => {
+const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => {
   const stmt = db.prepare(`
-    INSERT INTO projects (
-      external_id,
-      name,
+    INSERT INTO events (
+      event_id,
+      title,
       city_name,
-      venue_name,
+      site_name,
       show_time,
-      perform_start_time,
-      category_name,
-      sub_category_name,
-      artist_name,
-      actors,
-      tours,
-      price_str,
-      promotion_price,
-      site_status,
-      buy_url,
+      price,
+      performers,
+      poster,
+      url,
       source,
       raw_json,
       first_seen_at,
       last_seen_at
     ) VALUES (
-      @external_id,
-      @name,
+      @event_id,
+      @title,
       @city_name,
-      @venue_name,
+      @site_name,
       @show_time,
-      @perform_start_time,
-      @category_name,
-      @sub_category_name,
-      @artist_name,
-      @actors,
-      @tours,
-      @price_str,
-      @promotion_price,
-      @site_status,
-      @buy_url,
+      @price,
+      @performers,
+      @poster,
+      @url,
       @source,
       @raw_json,
       @first_seen_at,
       @last_seen_at
     )
-    ON CONFLICT(name, venue_name, show_time, city_name, perform_start_time)
+    ON CONFLICT(event_id)
     DO UPDATE SET
       last_seen_at = excluded.last_seen_at,
-      site_status = excluded.site_status,
-      price_str = excluded.price_str,
-      promotion_price = excluded.promotion_price,
-      buy_url = excluded.buy_url,
+      price = excluded.price,
+      show_time = excluded.show_time,
+      city_name = excluded.city_name,
+      site_name = excluded.site_name,
+      performers = excluded.performers,
+      poster = excluded.poster,
+      url = excluded.url,
       raw_json = excluded.raw_json
   `);
 
   stmt.run({
-    external_id: null,
-    name: project.name || "",
-    city_name: project.city_name || project.venue_city || "",
-    venue_name: project.venue_name || "",
-    show_time: project.show_time || "",
-    perform_start_time: project.perform_start_time || "",
-    category_name: project.category_name || "",
-    sub_category_name: project.sub_category_name || "",
-    artist_name: project.artist_name || "",
-    actors: project.actors || "",
-    tours: project.tours || "",
-    price_str: project.price_str || "",
-    promotion_price: project.promotion_price || "",
-    site_status: project.site_status || "",
-    buy_url: project.extra_info_map?.buy_url || "",
-    source: "damai",
-    raw_json: JSON.stringify(project),
+    event_id: event.id,
+    title: event.title || "",
+    city_name: event.cityName || "",
+    site_name: event.siteName || "",
+    show_time: event.showTime || "",
+    price: event.price || "",
+    performers: event.performers || "",
+    poster: event.poster || "",
+    url: event.url || "",
+    source: event.source || "showstart",
+    raw_json: JSON.stringify(event),
     first_seen_at: fetchedAt,
     last_seen_at: fetchedAt
   });
 };
 
-const insertArtistNews = (db: Database, artist: string, items: { title?: string; url?: string; date?: string; content?: string }[], fetchedAt: string) => {
+const logSearch = (
+  db: Database,
+  options: { name: string; url: string; cityCode?: string; keyword?: string },
+  fetchedAt: string,
+  resultsCount: number
+) => {
   const stmt = db.prepare(`
-    INSERT INTO artist_news (artist, title, url, date, content, source, fetched_at)
-    VALUES (@artist, @title, @url, @date, @content, @source, @fetched_at)
+    INSERT INTO search_logs (query_name, url, city_code, keyword, run_at, results_count)
+    VALUES (@query_name, @url, @city_code, @keyword, @run_at, @results_count)
   `);
 
-  for (const item of items) {
-    stmt.run({
-      artist,
-      title: item.title || "",
-      url: item.url || "",
-      date: item.date || "",
-      content: item.content || "",
-      source: "baidu",
-      fetched_at: fetchedAt
-    });
-  }
+  stmt.run({
+    query_name: options.name,
+    url: options.url,
+    city_code: options.cityCode || "",
+    keyword: options.keyword || "",
+    run_at: fetchedAt,
+    results_count: resultsCount
+  });
 };
 
-const loadRecentProjects = (db: Database, sinceIso: string): DamaiProject[] => {
+const loadRecentEvents = (db: Database, sinceIso: string): ShowStartEvent[] => {
   const stmt = db.prepare(`
-    SELECT raw_json FROM projects
+    SELECT raw_json FROM events
     WHERE first_seen_at >= ?
     ORDER BY last_seen_at DESC
   `);
   const rows = stmt.all(sinceIso) as Array<{ raw_json: string }>;
-  return rows.map((row) => JSON.parse(row.raw_json) as DamaiProject);
+  return rows.map((row) => JSON.parse(row.raw_json) as ShowStartEvent);
 };
 
 const storeReport = (db: Database, report: DailyReport) => {
   const stmt = db.prepare(`
-    INSERT INTO reports (run_at, report_text, report_json)
-    VALUES (@run_at, @report_text, @report_json)
+    INSERT INTO reports (run_at, report_json)
+    VALUES (@run_at, @report_json)
   `);
   stmt.run({
     run_at: report.runAt,
-    report_text: report.summary,
     report_json: JSON.stringify(report)
   });
 };
 
-const buildProfiles = (config: MonitoringConfig) => {
-  if (config.monitoring.profiles && config.monitoring.profiles.length > 0) {
-    return config.monitoring.profiles;
+const buildFocusEvents = (events: ShowStartEvent[], focusArtists: string[]) => {
+  return focusArtists.map((artist) => {
+    const lower = artist.toLowerCase();
+    const matches = events.filter(
+      (evt) => evt.title?.toLowerCase().includes(lower) || evt.performers?.toLowerCase().includes(lower)
+    );
+    return {
+      artist,
+      events: matches.slice(0, 5).map((evt) => ({
+        title: evt.title,
+        url: evt.url,
+        city: evt.cityName,
+        site: evt.siteName,
+        showTime: evt.showTime,
+        price: evt.price
+      }))
+    };
+  });
+};
+
+const buildHighlights = (events: ShowStartEvent[]) => {
+  const byCity = new Map<string, number>();
+  for (const evt of events) {
+    const city = evt.cityName || "未知";
+    byCity.set(city, (byCity.get(city) || 0) + 1);
   }
 
-  return [
-    {
-      name: "default",
-      filters: {
-        cities: config.monitoring.cities,
-        categories: config.monitoring.categories,
-        subCategories: config.monitoring.subCategories,
-        artists: [],
-        keywords: config.monitoring.keywords
-      }
-    }
-  ];
+  return [...byCity.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([city, count]) => `${city} ${count} 场`);
+};
+
+const buildReport = (events: ShowStartEvent[], timezone: string, focusArtists: string[]): DailyReport => {
+  const focus = buildFocusEvents(events, focusArtists);
+  const total = events.length;
+  const cities = new Set(events.map((evt) => evt.cityName || "未知"));
+
+  return {
+    runAt: nowInTz(timezone),
+    timezone,
+    summary: `今日共抓取 ${total} 条秀动演出，覆盖 ${cities.size} 个城市。关注艺人相关场次 ${focus.reduce(
+      (sum, item) => sum + item.events.length,
+      0
+    )} 条。`,
+    highlights: buildHighlights(events),
+    focusArtists: focus,
+    events
+  };
 };
 
 export const runDailyReport = async (db: Database, config: MonitoringConfig) => {
@@ -147,58 +162,34 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig) => 
   const reportWindowHours = config.app?.reportWindowHours || 24;
   const fetchedAt = toIso(new Date());
 
-  const profiles = buildProfiles(config);
-  for (const profile of profiles) {
-    const projects = await searchDamaiProjects({
-      cities: profile.filters.cities,
-      categories: profile.filters.categories,
-      subCategories: profile.filters.subCategories,
-      artists: profile.filters.artists,
-      keywords: profile.filters.keywords,
-      pageSize: config.damai?.pageSize || 30,
-      sortType: config.damai?.sortType ?? 2,
-      channels: config.damai?.channels,
-      dateType: config.damai?.dateType ?? 4
-    });
+  const queries = config.monitoring.queries || [];
+  if (queries.length === 0) {
+    console.warn("No monitoring queries configured; skipping scrape.");
+  }
 
-    for (const project of projects) {
-      upsertProject(db, project, fetchedAt);
+  for (const query of queries) {
+    try {
+      const { events, url } = await fetchShowStartEvents({
+        cityCode: query.cityCode,
+        keyword: query.keyword,
+        page: query.page,
+        pageSize: query.pageSize,
+        url: query.url
+      });
+
+      for (const event of events) {
+        upsertEvent(db, event, fetchedAt);
+      }
+      logSearch(db, { name: query.name, url, cityCode: query.cityCode, keyword: query.keyword }, fetchedAt, events.length);
+    } catch (error) {
+      console.error(`Query "${query.name}" failed:`, error);
+      logSearch(db, { name: query.name, url: query.url || "unknown", cityCode: query.cityCode, keyword: query.keyword }, fetchedAt, 0);
     }
   }
 
-  const focusUpdates: Record<string, { title?: string; url?: string; date?: string; content?: string }[]> = {};
-  for (const artist of config.monitoring.focusArtists) {
-    const queryKeywords = [artist, ...(config.monitoring.keywords || []), "巡演", "计划"]
-      .filter(Boolean)
-      .join(" ");
-    const references = await searchBaidu({
-      query: queryKeywords,
-      recency: config.search?.recency,
-      siteAllowList: config.search?.siteAllowList,
-      topK: 6
-    });
-
-    const sanitized = references.map((ref) => ({
-      title: ref.title,
-      url: ref.url,
-      date: ref.date,
-      content: ref.content
-    }));
-
-    focusUpdates[artist] = sanitized;
-    insertArtistNews(db, artist, sanitized, fetchedAt);
-  }
-
   const since = new Date(Date.now() - reportWindowHours * 60 * 60 * 1000).toISOString();
-  const projects = loadRecentProjects(db, since);
-
-  const report = await generateReportWithModel({
-    timezone,
-    runAt: nowInTz(timezone),
-    projects,
-    focusUpdates
-  });
-
+  const events = loadRecentEvents(db, since);
+  const report = buildReport(events, timezone, config.monitoring.focusArtists || []);
   storeReport(db, report);
   return report;
 };

@@ -2,11 +2,12 @@ import { loadConfig, loadEnv } from "./config";
 import { openDb } from "./db/client";
 import { initSchema } from "./db/schema";
 import { runDailyReport } from "./jobs/dailyReport";
+import { startServer } from "./server";
 
 const main = async () => {
   const command = Bun.argv[2];
   if (!command) {
-    console.error("Usage: bun run src/cli.ts <init-db|daily>");
+    console.error("Usage: bun run src/cli.ts <init-db|daily|serve>");
     process.exit(1);
   }
 
@@ -22,7 +23,7 @@ const main = async () => {
   if (command === "daily") {
     const config = loadConfig();
     const report = await runDailyReport(db, config);
-    console.log("\n=== GigWatch Daily Report ===");
+    console.log("\n=== GigWatch Daily Report (ShowStart) ===");
     console.log(`Run at: ${report.runAt} (${report.timezone})`);
     console.log("\nSummary:\n", report.summary);
     if (report.highlights.length > 0) {
@@ -35,13 +36,20 @@ const main = async () => {
       console.log("\nFocus Artists:");
       for (const artist of report.focusArtists) {
         console.log(`- ${artist.artist}`);
-        for (const update of artist.updates) {
-          console.log("  *", update.title || "(no title)");
-          if (update.url) console.log("    ", update.url);
+        for (const evt of artist.events) {
+          console.log("  *", evt.title || "(no title)");
+          if (evt.showTime) console.log("    ", evt.showTime);
+          if (evt.url) console.log("    ", evt.url);
         }
       }
     }
-    console.log(`\nProjects: ${report.projects.length}`);
+    console.log(`\nEvents stored: ${report.events.length}`);
+    return;
+  }
+
+  if (command === "serve") {
+    const config = loadConfig();
+    startServer(db, config, env);
     return;
   }
 
@@ -49,7 +57,9 @@ const main = async () => {
   process.exit(1);
 };
 
-main().catch((error) => {
-  console.error("Fatal error:", error);
-  process.exit(1);
-});
+if (import.meta.main) {
+  main().catch((error) => {
+    console.error("Fatal error:", error);
+    process.exit(1);
+  });
+}

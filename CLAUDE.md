@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GigWatch is a Bun.js-based monitoring agent that tracks live performance data from Damai (大麦网) and generates daily reports using AI. It pulls concert/show data via the Alibaba Damai TOP API, searches Baidu for artist tour updates, stores everything in SQLite, and generates summaries using OpenAI-compatible models (configured for Kimi K2).
+GigWatch is a Bun.js-based monitoring agent that scrapes ShowStart (秀动)演出列表、保存结果到 SQLite，并生成启发式日报。支持 CLI 和 Web UI，关注艺人配置与搜索日志落盘。
 
 ## Commands
 
@@ -32,37 +32,36 @@ bun run daily
 ## Architecture
 
 ### Data Flow
-1. **Monitoring profiles** (from `config/monitoring.json`) define what to search for (cities, categories, artists)
-2. **Damai client** (`src/clients/damai.ts`) fetches performance data via signed TOP API requests
-3. **Baidu client** (`src/clients/baidu.ts`) searches web for focus artist updates
-4. **Database** (`src/db/`) stores projects and artist news with upsert logic to track first/last seen times
-5. **OpenAI client** (`src/clients/openai.ts`) generates structured reports, falls back to heuristic summary if API key missing
-6. **Daily report job** (`src/jobs/dailyReport.ts`) orchestrates the entire pipeline
+1. **Queries** (`config/monitoring.json`) define ShowStart列表抓取参数（cityCode / keyword / 自定义 URL）
+2. **ShowStart scraper** (`src/clients/showstart.ts`) 请求列表页、解析 `window.__NUXT__` 中的 `listData`
+3. **Database** (`src/db/`) 存储演出数据与搜索日志，并存档日报
+4. **Report generation** (`src/jobs/dailyReport.ts`) 汇总最近窗口内的演出，匹配关注艺人，生成摘要/高亮
+5. **Web server** (`src/server.ts`) 提供简单 UI + API 触发抓取、查看最新日报与搜索日志
 
 ### Key Components
 
 **Configuration System** (`src/config.ts`, `src/types.ts`)
-- Environment variables loaded via `loadEnv()` from `.env`
-- Monitoring config loaded from `config/monitoring.json` via `loadConfig()`
-- Supports monitoring profiles for different search criteria combinations
-- If no profiles defined, creates a default profile from global monitoring settings
+- Env via `loadEnv()`: `APP_TIMEZONE`, `DB_PATH`, `APP_PORT`, `CONFIG_PATH`
+- Monitoring config via `loadConfig()` from `config/monitoring.json`
+- Queries are explicit objects, no implicit default profiles
 
-**Damai API Integration** (`src/clients/damai.ts`)
-- Uses Alibaba TOP API method `alibaba.damai.ec.search.project.search`
-- Supports both MD5 and HMAC signature methods for authentication
-- Filters: categories, sub-categories, artists, keywords, cities, date ranges, channels
-- Response can contain single object or array - normalized to array in `searchDamaiProjects()`
+**ShowStart Scraper** (`src/clients/showstart.ts`)
+- Builds list URL from cityCode/keyword or accepts custom URL
+- Fetches HTML with headers, extracts `window.__NUXT__` block, evaluates in a sandbox, reads `data[0].listData`
+- Normalizes items and fills event URL (`https://www.showstart.com/event/{id}`)
 
 **Database Schema** (`src/db/schema.ts`)
-- `projects` table: Unique constraint on (name, venue_name, show_time, city_name, perform_start_time)
-- `artist_news` table: Stores Baidu search results for focus artists
-- `reports` table: Archives generated reports with JSON and text versions
-- Upsert logic updates `last_seen_at`, `site_status`, `price_str`, `promotion_price` on conflicts
+- `events` table: stores ShowStart event fields + timestamps, unique on `event_id`
+- `search_logs` table: records each query run with url, cityCode/keyword, run time, result count
+- `reports` table: archives generated report JSON
 
-**Report Generation** (`src/clients/openai.ts`)
-- AI-generated: Uses OpenAI SDK with Kimi K2 model to produce structured JSON reports
-- Heuristic fallback: If no API key or parsing fails, generates basic summary with city counts
-- Extracts JSON from markdown code fences in LLM responses
+**Report Generation** (`src/jobs/dailyReport.ts`)
+- For each configured query, scrape ShowStart, upsert events, log the search
+- Build heuristic report: city counts as highlights; focus artists matched against title/performers; summary text
+
+**Web UI** (`src/server.ts`)
+- Endpoints: `GET /api/report/latest`, `GET /api/logs`, `POST /api/run`
+- `GET /` serves a lightweight HTML dashboard to trigger runs and view latest data
 
 ### Timezone Handling
 - All timestamps use the configured timezone (default: Asia/Shanghai)
@@ -70,39 +69,15 @@ bun run daily
 - Report window (default 24 hours) filters projects by `first_seen_at` timestamp
 
 ### Environment Variables
-Required for full functionality:
-- `DAMAI_APP_KEY`, `DAMAI_APP_SECRET` - Damai TOP API credentials
-- `BAIDU_APPBUILDER_API_KEY` - Baidu web search API
-- `OPENAI_API_KEY` - For AI report generation (optional, uses heuristic fallback)
-- `OPENAI_BASE_URL` - Base URL for OpenAI-compatible API (e.g., https://api.moonshot.cn/v1)
-- `OPENAI_MODEL` - Model name (default: kimi-k2)
-
-Optional:
-- `APP_TIMEZONE` - Timezone for timestamps (default: Asia/Shanghai)
-- `DB_PATH` - SQLite database location (default: ./data/gigwatch.sqlite)
-- `DAMAI_SIGN_METHOD` - md5 or hmac (default: md5)
-- `CONFIG_PATH` - Monitoring config file path (default: config/monitoring.json)
+Env:
+- `APP_TIMEZONE` (default Asia/Shanghai)
+- `DB_PATH` (default ./data/gigwatch.sqlite)
+- `APP_PORT` (default 3000, for Web UI)
+- `CONFIG_PATH` (override config file)
 
 ## Important Implementation Details
-
-### Adding New Monitoring Filters
-When adding filters to Damai searches, update:
-1. `DamaiSearchFilters` type in `src/clients/damai.ts`
-2. `param` object construction in `searchDamaiProjects()`
-3. Profile filter types in `src/types.ts` if exposing to config
-4. `buildProfiles()` in `src/jobs/dailyReport.ts` for default profile mapping
 
 ### Database Migrations
 There is no migration system. Schema changes require:
 1. Updating `initSchema()` in `src/db/schema.ts`
 2. Manual handling of existing databases (backup and re-init, or manual ALTER statements)
-
-### API Signature Generation
-Damai TOP API requires signatures on all requests:
-- MD5 mode: `MD5(secret + sorted_params + secret)`
-- HMAC mode: `HMAC-MD5(sorted_params, secret)`
-- All parameter keys must be sorted alphabetically before signing
-- Signature is added as `sign` parameter AFTER generation
-
-### Search Recency Filtering
-Baidu search supports: "week", "month", "semiyear", "year" (configured in `config/monitoring.json` under `search.recency`)

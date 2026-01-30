@@ -2,45 +2,37 @@ import type { Database } from "bun:sqlite";
 
 export const initSchema = (db: Database) => {
   db.exec(`
-    CREATE TABLE IF NOT EXISTS projects (
+    CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      external_id TEXT,
-      name TEXT,
+      event_id INTEGER,
+      title TEXT NOT NULL,
       city_name TEXT,
-      venue_name TEXT,
+      site_name TEXT,
       show_time TEXT,
-      perform_start_time TEXT,
-      category_name TEXT,
-      sub_category_name TEXT,
-      artist_name TEXT,
-      actors TEXT,
-      tours TEXT,
-      price_str TEXT,
-      promotion_price TEXT,
-      site_status TEXT,
-      buy_url TEXT,
+      price TEXT,
+      performers TEXT,
+      poster TEXT,
+      url TEXT,
       source TEXT,
       raw_json TEXT,
       first_seen_at TEXT,
       last_seen_at TEXT,
-      UNIQUE(name, venue_name, show_time, city_name, perform_start_time)
+      UNIQUE(event_id)
     );
 
-    CREATE TABLE IF NOT EXISTS artist_news (
+    CREATE TABLE IF NOT EXISTS search_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      artist TEXT NOT NULL,
-      title TEXT,
-      url TEXT,
-      date TEXT,
-      content TEXT,
-      source TEXT,
-      fetched_at TEXT
+      query_name TEXT NOT NULL,
+      url TEXT NOT NULL,
+      city_code TEXT,
+      keyword TEXT,
+      run_at TEXT NOT NULL,
+      results_count INTEGER
     );
 
     CREATE TABLE IF NOT EXISTS reports (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       run_at TEXT NOT NULL,
-      report_text TEXT NOT NULL,
       report_json TEXT NOT NULL
     );
   `);

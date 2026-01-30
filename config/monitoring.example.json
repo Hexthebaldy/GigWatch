@@ -1,36 +1,21 @@
 {
   "app": {
     "timezone": "Asia/Shanghai",
-    "daysAhead": 30,
     "reportWindowHours": 24
   },
   "monitoring": {
-    "cities": ["北京", "上海"],
-    "categories": ["演唱会", "音乐会"],
-    "subCategories": ["流行"],
-    "keywords": ["巡演", "演唱会"],
-    "focusArtists": ["周杰伦", "五月天"],
-    "profiles": [
+    "focusArtists": ["加木", "周杰伦"],
+    "queries": [
       {
-        "name": "北上广演唱会",
-        "filters": {
-          "cities": ["北京", "上海", "广州"],
-          "categories": ["演唱会"],
-          "subCategories": ["流行"],
-          "artists": [],
-          "keywords": []
-        }
+        "name": "上海-加木",
+        "cityCode": "21",
+        "keyword": "加木"
+      },
+      {
+        "name": "北京-摇滚",
+        "cityCode": "10",
+        "keyword": "摇滚"
       }
     ]
-  },
-  "damai": {
-    "pageSize": 30,
-    "sortType": 2,
-    "channels": ["10001", "10002"],
-    "dateType": 4
-  },
-  "search": {
-    "recency": "month",
-    "siteAllowList": []
   }
 }

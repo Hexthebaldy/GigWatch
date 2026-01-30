@@ -14,12 +14,3 @@ export const nowInTz = (timezone: string) => {
   const get = (type: string) => parts.find((p) => p.type === type)?.value || "00";
   return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")}`;
 };
-
-export const joinOrEmpty = (values?: string[]) => {
-  if (!values || values.length === 0) return undefined;
-  return values.join("|");
-};
-
-export const clampNumber = (value: number, min: number, max: number) => {
-  return Math.max(min, Math.min(max, value));
-};

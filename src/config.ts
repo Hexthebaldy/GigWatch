@@ -5,16 +5,9 @@ import type { MonitoringConfig } from "./types";
 const DEFAULT_CONFIG_PATH = "config/monitoring.json";
 
 export type AppEnv = {
-  damaiAppKey?: string;
-  damaiAppSecret?: string;
-  damaiSignMethod: "md5" | "hmac";
-  damaiBaseUrl: string;
-  baiduApiKey?: string;
-  openaiApiKey?: string;
-  openaiBaseUrl?: string;
-  openaiModel: string;
   timezone: string;
   dbPath: string;
+  serverPort: number;
 };
 
 export const loadConfig = (): MonitoringConfig => {
@@ -30,15 +23,8 @@ export const loadConfig = (): MonitoringConfig => {
 
 export const loadEnv = (): AppEnv => {
   return {
-    damaiAppKey: Bun.env.DAMAI_APP_KEY,
-    damaiAppSecret: Bun.env.DAMAI_APP_SECRET,
-    damaiSignMethod: (Bun.env.DAMAI_SIGN_METHOD || "md5") as "md5" | "hmac",
-    damaiBaseUrl: Bun.env.DAMAI_BASE_URL || "https://eco.taobao.com/router/rest",
-    baiduApiKey: Bun.env.BAIDU_APPBUILDER_API_KEY,
-    openaiApiKey: Bun.env.OPENAI_API_KEY,
-    openaiBaseUrl: Bun.env.OPENAI_BASE_URL,
-    openaiModel: Bun.env.OPENAI_MODEL || "kimi-k2",
     timezone: Bun.env.APP_TIMEZONE || "Asia/Shanghai",
-    dbPath: Bun.env.DB_PATH || "./data/gigwatch.sqlite"
+    dbPath: Bun.env.DB_PATH || "./data/gigwatch.sqlite",
+    serverPort: Number(Bun.env.APP_PORT || 3000)
   };
 };

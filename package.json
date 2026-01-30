@@ -6,9 +6,8 @@
   "scripts": {
     "daily": "bun run src/cli.ts daily",
     "init-db": "bun run src/cli.ts init-db",
-    "lint": "bun --check src/cli.ts"
+    "serve": "bun run src/cli.ts serve",
+    "lint": "bun --check src/config.ts src/db/schema.ts src/db/client.ts src/clients/showstart.ts src/jobs/dailyReport.ts src/server.ts src/utils.ts"
   },
-  "dependencies": {
-    "openai": "^4.56.0"
-  }
+  "dependencies": {}
 }
