@@ -176,23 +176,25 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
 
   const since = new Date(Date.now() - reportWindowHours * 60 * 60 * 1000).toISOString();
   const events = loadRecentEvents(db, since);
+  const focusList = config.monitoring.focusArtists || [];
+  const focusMatchesForModel = focusList.map((artist) => ({
+    artist,
+    events: events.filter(
+      (evt) => evt.title?.toLowerCase().includes(artist.toLowerCase()) || evt.performers?.toLowerCase().includes(artist.toLowerCase())
+    )
+  }));
 
   const report = await generateReportWithModel({
     timezone,
     runAt: nowInTz(timezone),
     events,
-    focusArtists: (config.monitoring.focusArtists || []).map((artist) => ({
-      artist,
-      events: events.filter(
-        (evt) => evt.title?.toLowerCase().includes(artist.toLowerCase()) || evt.performers?.toLowerCase().includes(artist.toLowerCase())
-      )
-    })),
+    focusArtists: focusMatchesForModel,
     env: env || { timezone, dbPath: "", serverPort: 0 },
     fallback: () => ({
       runAt: nowInTz(timezone),
       timezone,
-      summary: "未调用模型，未生成摘要。",
-      focusArtists: [],
+      summary: `未调用模型，本地仅列出关注艺人匹配。共 ${events.length} 条演出。`,
+      focusArtists: buildFocusEvents(events, focusList),
       events
     })
   });
