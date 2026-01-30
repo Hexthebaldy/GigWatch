@@ -5,7 +5,9 @@ import { fetchShowStartEvents } from "../clients/showstart";
 import { generateReportWithModel } from "../clients/openai";
 import { nowInTz, toIso } from "../utils";
 
+// 写入或更新单条演出记录，冲突时刷新 last_seen_at 及核心字段
 const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => {
+  // 预编译SQL语句
   const stmt = db.prepare(`
     INSERT INTO events (
       event_id,
@@ -66,6 +68,7 @@ const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => 
   });
 };
 
+// 记录一次搜索日志，失败不阻塞主流程
 const logSearch = (
   db: Database,
   options: { name?: string; url: string; cityCode?: string; keyword?: string },
@@ -91,6 +94,7 @@ const logSearch = (
   }
 };
 
+// 加载自指定时间以来首次出现的演出
 const loadRecentEvents = (db: Database, sinceIso: string): ShowStartEvent[] => {
   const stmt = db.prepare(`
     SELECT raw_json FROM events
@@ -101,6 +105,7 @@ const loadRecentEvents = (db: Database, sinceIso: string): ShowStartEvent[] => {
   return rows.map((row) => JSON.parse(row.raw_json) as ShowStartEvent);
 };
 
+// 保存生成的日报 JSON
 const storeReport = (db: Database, report: DailyReport) => {
   const stmt = db.prepare(`
     INSERT INTO reports (run_at, report_json)
@@ -112,6 +117,7 @@ const storeReport = (db: Database, report: DailyReport) => {
   });
 };
 
+// 针对每个关注艺人收集最多 5 条匹配演出
 const buildFocusEvents = (events: ShowStartEvent[], focusArtists: string[]) => {
   return focusArtists.map((artist) => {
     const lower = artist.toLowerCase();
@@ -132,6 +138,7 @@ const buildFocusEvents = (events: ShowStartEvent[], focusArtists: string[]) => {
   });
 };
 
+// 提炼演出最多的前若干城市
 const buildHighlights = (events: ShowStartEvent[]) => {
   const byCity = new Map<string, number>();
   for (const evt of events) {
@@ -145,6 +152,7 @@ const buildHighlights = (events: ShowStartEvent[]) => {
     .map(([city, count]) => `${city} ${count} 场`);
 };
 
+// 本地兜底日报，不依赖模型
 export const buildHeuristicReport = (events: ShowStartEvent[], timezone: string, focusArtists: string[]): DailyReport => {
   const focus = buildFocusEvents(events, focusArtists);
   const total = events.length;
@@ -163,6 +171,7 @@ export const buildHeuristicReport = (events: ShowStartEvent[], timezone: string,
   };
 };
 
+// 每日主流程：抓取、落库、记日志、生成日报（模型或本地兜底）、保存日报
 export const runDailyReport = async (db: Database, config: MonitoringConfig, env?: AppEnv) => {
   const timezone = config.app?.timezone || "Asia/Shanghai";
   const reportWindowHours = config.app?.reportWindowHours || 24;
