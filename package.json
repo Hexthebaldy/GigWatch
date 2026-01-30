@@ -12,5 +12,8 @@
   },
   "dependencies": {
     "openai": "^4.56.0"
+  },
+  "devDependencies": {
+    "bun-types": "^1.0.0"
   }
 }

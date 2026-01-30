@@ -6,6 +6,6 @@
     "resolveJsonModule": true,
     "strict": true,
     "noEmit": true,
-    "types": ["bun-types"]
+    "types": ["bun-types", "node"]
   }
 }

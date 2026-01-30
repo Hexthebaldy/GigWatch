@@ -1,4 +1,4 @@
-import { runInNewContext } from "node:vm";
+import vm from "vm";
 import type { ShowStartEvent } from "../types";
 
 export type ShowStartSearchParams = {
@@ -30,7 +30,7 @@ const parseNuxtState = (html: string) => {
   }
 
   const sandbox = { window: {} as any };
-  runInNewContext(`window.__NUXT__=${match[1]};`, sandbox, { timeout: 1000 });
+  vm.runInNewContext(`window.__NUXT__=${match[1]};`, sandbox, { timeout: 1000 });
   const nuxtState = sandbox.window.__NUXT__;
   const listData = nuxtState?.data?.[0]?.listData;
   if (!Array.isArray(listData)) {
