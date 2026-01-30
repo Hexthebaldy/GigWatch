@@ -43,11 +43,12 @@ bun run daily
 **Configuration System** (`src/config.ts`, `src/types.ts`)
 - Env via `loadEnv()`: `APP_TIMEZONE`, `DB_PATH`, `APP_PORT`, `CONFIG_PATH`
 - Monitoring config via `loadConfig()` from `config/monitoring.json`
-- Queries are explicit objects, no implicit default profiles
+- Queries are explicit objects (one of cityCode/keyword/showStyle per query), no implicit default profiles
 
 **ShowStart Scraper** (`src/clients/showstart.ts`)
-- Builds list URL from cityCode/keyword or accepts custom URL
+- Builds list URL from cityCode/keyword/showStyle (only one per request) or accepts custom URL
 - Fetches HTML with headers, extracts `window.__NUXT__` block, evaluates in a sandbox, reads `data[0].listData`
+- Paginates pageNo up to 20, pageSize default 50; stops when page is empty or < pageSize
 - Normalizes items and fills event URL (`https://www.showstart.com/event/{id}`)
 
 **Database Schema** (`src/db/schema.ts`)

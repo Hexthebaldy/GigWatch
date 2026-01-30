@@ -18,6 +18,10 @@
         "name": "北京-摇滚",
         "cityCode": "10",
         "keyword": "摇滚"
+      },
+      {
+        "name": "风格-流行",
+        "showStyle": "流行"
       }
     ]
   }

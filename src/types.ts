@@ -2,6 +2,7 @@ export type MonitoringQuery = {
   name: string;
   cityCode?: string;
   keyword?: string;
+  showStyle?: string;
   url?: string;
   page?: number;
   pageSize?: number;

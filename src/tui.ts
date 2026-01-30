@@ -104,6 +104,7 @@ export const startTui = async () => {
       const name = await ask("名称: ");
       const cityCode = await ask("cityCode (可空): ");
       const keyword = await ask("keyword (可空): ");
+      const showStyle = await ask("showStyle (演出风格，可空): ");
       const url = await ask("自定义 URL (可空): ");
       const page = await ask("页码 (可空): ");
       const pageSize = await ask("页大小 (可空): ");
@@ -112,6 +113,7 @@ export const startTui = async () => {
         name: name || "未命名",
         cityCode: cityCode || undefined,
         keyword: keyword || undefined,
+        showStyle: showStyle || undefined,
         url: url || undefined,
         page: page ? Number(page) : undefined,
         pageSize: pageSize ? Number(pageSize) : undefined
@@ -131,9 +133,7 @@ export const startTui = async () => {
         console.log("\n当前监听查询:");
         config.monitoring.queries.forEach((q, idx) => {
           console.log(
-            ` ${idx + 1}. ${q.name} | cityCode=${q.cityCode || "-"} keyword=${q.keyword || "-"} url=${
-              q.url || "-"
-            }`
+            ` ${idx + 1}. ${q.name} | cityCode=${q.cityCode || "-"} keyword=${q.keyword || "-"} style=${q.showStyle || "-"} url=${q.url || "-"}`
           );
         });
       }

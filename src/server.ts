@@ -73,6 +73,7 @@ const indexHtml = `
           <label>名称</label><input name="name" required />
           <label>城市代码 (cityCode)</label><input name="cityCode" />
           <label>关键词 (keyword)</label><input name="keyword" />
+          <label>演出风格 (showStyle)</label><input name="showStyle" />
           <label>自定义 URL (可选，覆盖以上参数)</label><input name="url" />
           <label>页码 (可选)</label><input name="page" type="number" />
           <label>页大小 (可选)</label><input name="pageSize" type="number" />
@@ -147,6 +148,7 @@ const indexHtml = `
           name: fd.get('name'),
           cityCode: fd.get('cityCode'),
           keyword: fd.get('keyword'),
+          showStyle: fd.get('showStyle'),
           url: fd.get('url'),
           page: fd.get('page') ? Number(fd.get('page')) : undefined,
           pageSize: fd.get('pageSize') ? Number(fd.get('pageSize')) : undefined,
@@ -261,6 +263,7 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
           name: body.name || "未命名",
           cityCode: body.cityCode || undefined,
           keyword: body.keyword || undefined,
+          showStyle: body.showStyle || undefined,
           url: body.url || undefined,
           page: body.page || undefined,
           pageSize: body.pageSize || undefined

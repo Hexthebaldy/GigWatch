@@ -168,10 +168,15 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig) => 
   }
 
   for (const query of queries) {
+    const filled = [query.cityCode, query.keyword, query.showStyle].filter(Boolean).length;
+    if (filled > 1) {
+      console.warn(`Query "${query.name}" has multiple params; only one of cityCode/keyword/showStyle should be set.`);
+    }
     try {
       const { events, url } = await fetchShowStartEvents({
         cityCode: query.cityCode,
         keyword: query.keyword,
+        showStyle: query.showStyle,
         page: query.page,
         pageSize: query.pageSize,
         url: query.url
