@@ -8,7 +8,7 @@
     "init-db": "bun run src/cli.ts init-db",
     "serve": "bun run src/cli.ts serve",
     "tui": "bun run src/cli.ts tui",
-    "lint": "bun --check src/config.ts src/db/schema.ts src/db/client.ts src/clients/showstart.ts src/jobs/dailyReport.ts src/server.ts src/utils.ts src/tui.ts"
+    "lint": "bun --check src/config.ts src/db/schema.ts src/db/client.ts src/clients/showstart.ts src/jobs/dailyReport.ts src/server.ts src/utils.ts src/tui.ts src/agent/tools/base.ts src/agent/tools/registry.ts src/agent/tools/database.ts src/agent/tools/showstart.ts src/agent/task.ts src/agent/executor.ts src/cli.ts"
   },
   "dependencies": {
     "openai": "^4.56.0"

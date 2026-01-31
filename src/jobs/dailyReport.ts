@@ -5,6 +5,11 @@ import { fetchShowStartEvents } from "../clients/showstart";
 import { generateReportWithModel } from "../clients/openai";
 import { nowInTz, toIso } from "../utils";
 import { logError, logInfo, logWarn } from "../logger";
+import { AgentExecutor } from "../agent/executor";
+import { ToolRegistry } from "../agent/tools/registry";
+import { buildEventMonitoringTask } from "../agent/task";
+import { showstartTool } from "../agent/tools/showstart";
+import { createDatabaseTool, createLoadEventsTool, createLogSearchTool } from "../agent/tools/database";
 
 // 写入或更新单条演出记录，冲突时刷新 last_seen_at 及核心字段
 const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => {
@@ -240,6 +245,59 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
       timezone,
       summary: `未调用模型，本地仅列出关注艺人匹配。共 ${events.length} 条演出。`,
       focusArtists: buildFocusEvents(events, focusList),
+      events
+    })
+  });
+
+  storeReport(db, report);
+  logInfo(`Report stored at ${report.runAt}, events=${report.events.length}`);
+  return report;
+};
+
+// Agent-based version of runDailyReport for Phase 1
+export const runDailyReportWithAgent = async (db: Database, config: MonitoringConfig, env?: AppEnv) => {
+  const timezone = config.app?.timezone || "Asia/Shanghai";
+  const reportWindowHours = config.app?.reportWindowHours || 24;
+
+  // Build queries from config
+  const queries = buildQueriesFromConfig(config);
+
+  // Initialize tool registry
+  const registry = new ToolRegistry();
+  registry.register(showstartTool);
+  registry.register(createDatabaseTool(db));
+  registry.register(createLoadEventsTool(db));
+  registry.register(createLogSearchTool(db));
+
+  // Create executor
+  const executor = new AgentExecutor(db, registry);
+
+  // Build task
+  const task = buildEventMonitoringTask(config, queries);
+
+  // Execute task
+  const result = await executor.execute(task);
+
+  if (!result.success) {
+    logError(`Agent task failed: ${result.error}`);
+    throw new Error(result.error || "Unknown agent error");
+  }
+
+  logInfo(`Agent task completed: ${result.summary}`);
+
+  // Generate report using model (keeping existing logic)
+  const { events, focusMatches } = result.data;
+  const report = await generateReportWithModel({
+    timezone,
+    runAt: nowInTz(timezone),
+    events,
+    focusArtists: focusMatches,
+    env: env || { timezone, dbPath: "", serverPort: 0 },
+    fallback: () => ({
+      runAt: nowInTz(timezone),
+      timezone,
+      summary: `Agent 执行完成。共抓取 ${result.data.totalEventsFetched} 条演出，最近 ${reportWindowHours} 小时内有 ${events.length} 条新演出。`,
+      focusArtists: buildFocusEvents(events, config.monitoring.focusArtists || []),
       events
     })
   });

@@ -4,7 +4,7 @@ import { stdin as input, stdout as output } from "node:process";
 import { loadConfig, loadEnv, getConfigPath } from "./config";
 import { openDb } from "./db/client";
 import { initSchema } from "./db/schema";
-import { runDailyReport } from "./jobs/dailyReport";
+import { runDailyReportWithAgent } from "./jobs/dailyReport";
 import type { DailyReport, MonitoringConfig } from "./types";
 
 const loadLatestReport = (db: any): DailyReport | null => {
@@ -96,7 +96,7 @@ export const startTui = async () => {
       printLogs(loadLogs(db));
     } else if (choice === "3") {
       console.log("抓取中...");
-      const report = await runDailyReport(db, config, loadEnv());
+      const report = await runDailyReportWithAgent(db, config, loadEnv());
       printReport(report);
     } else if (choice === "4") {
       const name = await ask("名称: ");

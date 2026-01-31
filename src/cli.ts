@@ -1,7 +1,7 @@
 import { loadConfig, loadEnv } from "./config";
 import { openDb } from "./db/client";
 import { initSchema } from "./db/schema";
-import { runDailyReport } from "./jobs/dailyReport";
+import { runDailyReport, runDailyReportWithAgent } from "./jobs/dailyReport";
 import { startServer } from "./server";
 import { startTui } from "./tui";
 
@@ -23,8 +23,9 @@ const main = async () => {
 
   if (command === "daily") {
     const config = loadConfig();
-    const report = await runDailyReport(db, config, env);
-    console.log("\n=== GigWatch Daily Report (ShowStart) ===");
+    // Use the new agent-based version
+    const report = await runDailyReportWithAgent(db, config, env);
+    console.log("\n=== GigWatch Daily Report (ShowStart - Agent Mode) ===");
     console.log(`Run at: ${report.runAt} (${report.timezone})`);
     console.log("\nSummary:\n", report.summary);
     if (report.focusArtists.length > 0) {
