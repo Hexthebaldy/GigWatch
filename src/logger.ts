@@ -1,7 +1,7 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-const LOG_PATH = resolve(process.cwd(), Bun.env.LOG_PATH || "./data/gigwatch.log");
+const LOG_PATH = resolve(process.cwd(), Bun.env.LOG_PATH || "./data/gigwatch.log.jsonl");
 
 const ensureDir = () => {
   const dir = dirname(LOG_PATH);
@@ -12,24 +12,20 @@ const ensureDir = () => {
   }
 };
 
-const format = (level: "INFO" | "WARN" | "ERROR", message: string) => {
-  const ts = new Date().toISOString();
-  return `${ts} [${level}] ${message}\n`;
+type Level = "INFO" | "WARN" | "ERROR";
+
+const write = (level: Level, message: string) => {
+  ensureDir();
+  const entry = {
+    ts: new Date().toISOString(),
+    level,
+    message
+  };
+  appendFileSync(LOG_PATH, JSON.stringify(entry) + "\n", "utf-8");
 };
 
-export const logInfo = (msg: string) => {
-  ensureDir();
-  appendFileSync(LOG_PATH, format("INFO", msg), "utf-8");
-};
-
-export const logWarn = (msg: string) => {
-  ensureDir();
-  appendFileSync(LOG_PATH, format("WARN", msg), "utf-8");
-};
-
-export const logError = (msg: string) => {
-  ensureDir();
-  appendFileSync(LOG_PATH, format("ERROR", msg), "utf-8");
-};
+export const logInfo = (msg: string) => write("INFO", msg);
+export const logWarn = (msg: string) => write("WARN", msg);
+export const logError = (msg: string) => write("ERROR", msg);
 
 export const logPath = LOG_PATH;
