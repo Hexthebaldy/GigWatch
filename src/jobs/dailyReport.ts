@@ -1,13 +1,18 @@
 import type { Database } from "bun:sqlite";
 import type { AppEnv } from "../config";
-import type { DailyReport, MonitoringConfig, ShowStartEvent } from "../types";
+import type { DailyReport, MonitoringConfig, ShowStartEvent, MonitoringQuery } from "../types";
 import { fetchShowStartEvents } from "../clients/showstart";
 import { generateReportWithModel } from "../clients/openai";
 import { nowInTz, toIso } from "../utils";
 
 // 写入或更新单条演出记录，冲突时刷新 last_seen_at 及核心字段
 const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => {
-  // 预编译SQL语句
+  if (event.id === null || event.id === undefined) {
+    console.warn("Skip event without id", event);
+    return;
+  }
+  const safeTitle = (event.title || "").trim() || "未命名演出";
+  const safeUrl = event.url || `https://www.showstart.com/event/${event.id}`;
   const stmt = db.prepare(`
     INSERT INTO events (
       event_id,
@@ -53,14 +58,14 @@ const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => 
 
   stmt.run({
     event_id: event.id,
-    title: event.title || "",
+    title: safeTitle,
     city_name: event.cityName || "",
     site_name: event.siteName || "",
     show_time: event.showTime || "",
     price: event.price || "",
     performers: event.performers || "",
     poster: event.poster || "",
-    url: event.url || "",
+    url: safeUrl,
     source: event.source || "showstart",
     raw_json: JSON.stringify(event),
     first_seen_at: fetchedAt,
@@ -75,6 +80,8 @@ const logSearch = (
   fetchedAt: string,
   resultsCount: number
 ) => {
+  const queryName = (options.name || "").trim() || "unknown";
+  const url = options.url || "unknown";
   const stmt = db.prepare(`
     INSERT INTO search_logs (query_name, url, city_code, keyword, run_at, results_count)
     VALUES (@query_name, @url, @city_code, @keyword, @run_at, @results_count)
@@ -82,8 +89,8 @@ const logSearch = (
 
   try {
     stmt.run({
-      query_name: options.name || "unknown",
-      url: options.url,
+      query_name: queryName,
+      url,
       city_code: options.cityCode || "",
       keyword: options.keyword || "",
       run_at: fetchedAt,
@@ -107,12 +114,13 @@ const loadRecentEvents = (db: Database, sinceIso: string): ShowStartEvent[] => {
 
 // 保存生成的日报 JSON
 const storeReport = (db: Database, report: DailyReport) => {
+  const runAt = report.runAt || nowInTz(report.timezone || "Asia/Shanghai");
   const stmt = db.prepare(`
     INSERT INTO reports (run_at, report_json)
     VALUES (@run_at, @report_json)
   `);
   stmt.run({
-    run_at: report.runAt,
+    run_at: runAt,
     report_json: JSON.stringify(report)
   });
 };
@@ -138,13 +146,37 @@ const buildFocusEvents = (events: ShowStartEvent[], focusArtists: string[]) => {
   });
 };
 
+// 从配置派生所有需要执行的查询：关注艺人 + 城市 + 演出风格 + 关键词
+const buildQueriesFromConfig = (config: MonitoringConfig): MonitoringQuery[] => {
+  const base: MonitoringQuery[] = [];
+  const focus = config.monitoring.focusArtists || [];
+  const cityCodes = config.monitoring.cityCodes || [];
+  const showStyles = config.monitoring.showStyles || [];
+  const keywords = config.monitoring.keywords || [];
+
+  for (const artist of focus) {
+    base.push({ name: `艺人-${artist}`, keyword: artist });
+  }
+  for (const code of cityCodes) {
+    base.push({ name: `城市-${code}`, cityCode: code });
+  }
+  for (const style of showStyles) {
+    base.push({ name: `风格-${style}`, showStyle: style });
+  }
+  for (const kw of keywords) {
+    base.push({ name: `关键词-${kw}`, keyword: kw });
+  }
+  console.log('#所有抓取url列表: ', base);
+  return base;
+};
+
 // 每日主流程：抓取、落库、记日志、生成日报（优先模型，缺省则返回空摘要）、保存日报
 export const runDailyReport = async (db: Database, config: MonitoringConfig, env?: AppEnv) => {
   const timezone = config.app?.timezone || "Asia/Shanghai";
   const reportWindowHours = config.app?.reportWindowHours || 24;
   const fetchedAt = toIso(new Date());
 
-  const queries = config.monitoring.queries || [];
+  const queries = buildQueriesFromConfig(config);
   if (queries.length === 0) {
     console.warn("No monitoring queries configured; skipping scrape.");
   }

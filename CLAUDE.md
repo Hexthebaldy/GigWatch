@@ -32,7 +32,7 @@ bun run daily
 ## Architecture
 
 ### Data Flow
-1. **Queries** (`config/monitoring.json`) define ShowStart列表抓取参数（cityCode / keyword / 自定义 URL）
+1. **Queries** (`config/monitoring.json`) define ShowStart列表抓取参数：focusArtists、cityCodes、showStyles、keywords 会自动展开为查询
 2. **ShowStart scraper** (`src/clients/showstart.ts`) 请求列表页、解析 `window.__NUXT__` 中的 `listData`
 3. **Database** (`src/db/`) 存储演出数据与搜索日志，并存档日报
 4. **Report generation** (`src/jobs/dailyReport.ts`) 汇总最近窗口内的演出，匹配关注艺人，生成摘要

@@ -40,9 +40,15 @@ bun run tui
 
 ## Config / Env
 - 配置示例：`config/monitoring.example.json`
-- 环境变量：`APP_TIMEZONE`（默认 Asia/Shanghai），`DB_PATH`（默认 ./data/gigwatch.sqlite），`APP_PORT`（Web 端口，默认 3000），`CONFIG_PATH`（自定义配置路径）
-- Web 服务自带调度：每天 06:00（服务器时区）自动跑抓取，可在页面手动触发并编辑监听/关注艺人
-- 抓取策略：单次请求只能携带一个过滤参数（cityCode/keyword/showStyle），默认 pageSize=50，自增 pageNo 直到无数据或 pageNo>20
+  - 环境变量：`APP_TIMEZONE`（默认 Asia/Shanghai），`DB_PATH`（默认 ./data/gigwatch.sqlite），`APP_PORT`（Web 端口，默认 3000），`CONFIG_PATH`（自定义配置路径）
+  - Web 服务自带调度：每天 06:00（服务器时区）自动跑抓取，可在页面手动触发并编辑监听/关注艺人
+  - 抓取策略：单次请求只能携带一个过滤参数（cityCode/keyword/showStyle），默认 pageSize=50，自增 pageNo 直到无数据或 pageNo>20
+
+监控配置字段（`monitoring`）：
+- `focusArtists`: 关注艺人列表（也会作为关键词跑一遍）
+- `cityCodes`: 需要监听的城市代码列表（每个城市一条查询）
+- `showStyles`: 需要监听的演出风格列表（每个风格一条查询）
+- `keywords`: 关键词监听列表
 
 ## Scheduling
 用 cron 等调度每日运行一次，例如：

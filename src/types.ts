@@ -15,7 +15,9 @@ export type MonitoringConfig = {
   };
   monitoring: {
     focusArtists: string[];
-    queries: MonitoringQuery[];
+    cityCodes?: string[];
+    showStyles?: string[];
+    keywords?: string[];
   };
 };
 

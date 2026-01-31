@@ -5,22 +5,19 @@
   },
   "monitoring": {
     "focusArtists": [
-      "加木",
-      "周杰伦"
+      "青叶市子",
+      "Central Cee"
     ],
-    "queries": [
-      {
-        "name": "上海-加木",
-        "keyword": "加木"
-      },
-      {
-        "name": "北京-摇滚",
-        "keyword": "摇滚"
-      },
-      {
-        "name": "风格-流行",
-        "showStyle": "流行"
-      }
+    "cityCodes": [
+      "21",
+      "10"
+    ],
+    "showStyles": [
+      "摇滚",
+      "流行"
+    ],
+    "keywords": [
+      "新年"
     ]
   }
 }
