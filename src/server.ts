@@ -2,7 +2,7 @@ import { writeFileSync } from "node:fs";
 import type { Database } from "bun:sqlite";
 import type { AppEnv } from "./config";
 import { getConfigPath } from "./config";
-import type { DailyReport, MonitoringConfig, MonitoringQuery } from "./types";
+import type { DailyReport, MonitoringConfig } from "./types";
 import { runDailyReport } from "./jobs/dailyReport";
 import { nowInTz } from "./utils";
 
@@ -68,20 +68,16 @@ const indexHtml = `
         <div id="report"></div>
       </div>
       <div class="card">
-        <h3>新增监听</h3>
-        <form id="queryForm">
-          <label>名称</label><input name="name" required />
-          <label>城市代码 (cityCode)</label><input name="cityCode" />
-          <label>关键词 (keyword)</label><input name="keyword" />
-          <label>演出风格 (showStyle)</label><input name="showStyle" />
-          <label>自定义 URL (可选，覆盖以上参数)</label><input name="url" />
-          <label>页码 (可选)</label><input name="page" type="number" />
-          <label>页大小 (可选)</label><input name="pageSize" type="number" />
-          <button type="submit">保存并追加</button>
-        </form>
-        <h4>关注艺人</h4>
-        <textarea id="focusInput" rows="3" placeholder="以逗号分隔"></textarea>
-        <button id="saveFocus">保存关注艺人</button>
+        <h3>监听配置</h3>
+        <label>关注艺人（逗号分隔）</label>
+        <textarea id="focusInput" rows="3" placeholder="如：五月天, 周杰伦"></textarea>
+        <label>城市代码 cityCodes（逗号分隔）</label>
+        <textarea id="cityInput" rows="2" placeholder="如：21, 11"></textarea>
+        <label>演出风格 showStyles（逗号分隔）</label>
+        <textarea id="styleInput" rows="2" placeholder="如：摇滚, 流行"></textarea>
+        <label>关键词 keywords（逗号分隔）</label>
+        <textarea id="keywordInput" rows="2" placeholder="如：音乐节, 巡演"></textarea>
+        <button id="saveMonitoring">保存配置</button>
         <p class="muted">保存后下次抓取生效。</p>
       </div>
     </div>
@@ -91,9 +87,11 @@ const indexHtml = `
       const runBtn = document.getElementById('runBtn');
       const reportEl = document.getElementById('report');
       const logsEl = document.getElementById('logs');
-      const queryForm = document.getElementById('queryForm');
       const focusInput = document.getElementById('focusInput');
-      const saveFocusBtn = document.getElementById('saveFocus');
+      const cityInput = document.getElementById('cityInput');
+      const styleInput = document.getElementById('styleInput');
+      const keywordInput = document.getElementById('keywordInput');
+      const saveMonitoringBtn = document.getElementById('saveMonitoring');
 
       const renderReport = (data) => {
         if (!data) { reportEl.innerHTML = '<p class="muted">暂无报告</p>'; return; }
@@ -122,6 +120,15 @@ const indexHtml = `
         if (Array.isArray(cfg.monitoring?.focusArtists)) {
           focusInput.value = cfg.monitoring.focusArtists.join(',');
         }
+        if (Array.isArray(cfg.monitoring?.cityCodes)) {
+          cityInput.value = cfg.monitoring.cityCodes.join(',');
+        }
+        if (Array.isArray(cfg.monitoring?.showStyles)) {
+          styleInput.value = cfg.monitoring.showStyles.join(',');
+        }
+        if (Array.isArray(cfg.monitoring?.keywords)) {
+          keywordInput.value = cfg.monitoring.keywords.join(',');
+        }
       };
 
       runBtn.onclick = async () => {
@@ -140,36 +147,18 @@ const indexHtml = `
         runBtn.disabled = false;
       };
 
-      queryForm.onsubmit = async (e) => {
-        e.preventDefault();
-        const fd = new FormData(queryForm);
-        const payload = {
-          name: fd.get('name'),
-          cityCode: fd.get('cityCode'),
-          keyword: fd.get('keyword'),
-          showStyle: fd.get('showStyle'),
-          url: fd.get('url'),
-          page: fd.get('page') ? Number(fd.get('page')) : undefined,
-          pageSize: fd.get('pageSize') ? Number(fd.get('pageSize')) : undefined,
-        };
-        statusEl.textContent = '保存中...';
-        const res = await fetch('/api/config/query', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        statusEl.textContent = res.ok ? '已保存查询' : '保存失败';
-        queryForm.reset();
-      };
-
-      saveFocusBtn.onclick = async () => {
+      saveMonitoringBtn.onclick = async () => {
         const artists = focusInput.value.split(',').map(s => s.trim()).filter(Boolean);
-        const res = await fetch('/api/config/focus', {
+        const cities = cityInput.value.split(',').map(s => s.trim()).filter(Boolean);
+        const styles = styleInput.value.split(',').map(s => s.trim()).filter(Boolean);
+        const keywords = keywordInput.value.split(',').map(s => s.trim()).filter(Boolean);
+        statusEl.textContent = '保存中...';
+        const res = await fetch('/api/config/monitoring', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ focusArtists: artists })
+          body: JSON.stringify({ focusArtists: artists, cityCodes: cities, showStyles: styles, keywords })
         });
-        statusEl.textContent = res.ok ? '关注艺人已保存' : '保存失败';
+        statusEl.textContent = res.ok ? '配置已保存' : '保存失败';
       };
 
       loadData();
@@ -194,7 +183,9 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
       app: config.app,
       monitoring: {
         focusArtists: config.monitoring.focusArtists || [],
-        queries: config.monitoring.queries || []
+        cityCodes: config.monitoring.cityCodes || [],
+        showStyles: config.monitoring.showStyles || [],
+        keywords: config.monitoring.keywords || []
       }
     }
   };
@@ -256,26 +247,14 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
         });
       }
 
-      if (url.pathname === "/api/config/query" && req.method === "POST") {
+      if (url.pathname === "/api/config/monitoring" && req.method === "POST") {
         const body = await req.json();
-        const query: MonitoringQuery = {
-          name: body.name || "未命名",
-          cityCode: body.cityCode || undefined,
-          keyword: body.keyword || undefined,
-          showStyle: body.showStyle || undefined,
-          url: body.url || undefined,
-          page: body.page || undefined,
-          pageSize: body.pageSize || undefined
+        configRef.current.monitoring = {
+          focusArtists: Array.isArray(body.focusArtists) ? body.focusArtists : [],
+          cityCodes: Array.isArray(body.cityCodes) ? body.cityCodes : [],
+          showStyles: Array.isArray(body.showStyles) ? body.showStyles : [],
+          keywords: Array.isArray(body.keywords) ? body.keywords : []
         };
-        if (!configRef.current.monitoring.queries) configRef.current.monitoring.queries = [];
-        configRef.current.monitoring.queries.push(query);
-        saveConfig(configRef);
-        return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
-      }
-
-      if (url.pathname === "/api/config/focus" && req.method === "POST") {
-        const body = await req.json();
-        configRef.current.monitoring.focusArtists = Array.isArray(body.focusArtists) ? body.focusArtists : [];
         saveConfig(configRef);
         return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
       }
