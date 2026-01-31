@@ -4,11 +4,12 @@ import type { DailyReport, MonitoringConfig, ShowStartEvent, MonitoringQuery } f
 import { fetchShowStartEvents } from "../clients/showstart";
 import { generateReportWithModel } from "../clients/openai";
 import { nowInTz, toIso } from "../utils";
+import { logError, logInfo, logWarn } from "../logger";
 
 // 写入或更新单条演出记录，冲突时刷新 last_seen_at 及核心字段
 const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => {
   if (event.id === null || event.id === undefined) {
-    console.warn("Skip event without id", event);
+    logWarn("Skip event without id");
     return;
   }
   const safeTitle = (event.title || "").trim() || "未命名演出";
@@ -97,7 +98,7 @@ const logSearch = (
       results_count: resultsCount
     });
   } catch (error) {
-    console.error("Failed to log search", error);
+    logError(`Failed to log search: ${String(error)}`);
   }
 };
 
@@ -166,7 +167,6 @@ const buildQueriesFromConfig = (config: MonitoringConfig): MonitoringQuery[] => 
   for (const kw of keywords) {
     base.push({ name: `关键词-${kw}`, keyword: kw });
   }
-  console.log('#所有抓取url列表: ', base);
   return base;
 };
 
@@ -178,15 +178,17 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
 
   const queries = buildQueriesFromConfig(config);
   if (queries.length === 0) {
-    console.warn("No monitoring queries configured; skipping scrape.");
+    logWarn("No monitoring queries configured; skipping scrape.");
   }
+  logInfo(`Daily run start at ${fetchedAt}, queries=${queries.length}`);
 
   for (const query of queries) {
     const filled = [query.cityCode, query.keyword, query.showStyle].filter(Boolean).length;
     if (filled > 1) {
-      console.warn(`Query "${query.name}" has multiple params; only one of cityCode/keyword/showStyle should be set.`);
+      logWarn(`Query "${query.name}" has multiple params; only one of cityCode/keyword/showStyle should be set.`);
     }
     try {
+      logInfo(`Fetching query "${query.name}" ...`);
       const { events, url } = await fetchShowStartEvents({
         cityCode: query.cityCode,
         keyword: query.keyword,
@@ -199,15 +201,17 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
       for (const event of events) {
         upsertEvent(db, event, fetchedAt);
       }
+      logInfo(`Query "${query.name}" success, events=${events.length}, url=${url}`);
       logSearch(db, { name: query.name, url, cityCode: query.cityCode, keyword: query.keyword }, fetchedAt, events.length);
     } catch (error) {
-      console.error(`Query "${query.name}" failed:`, error);
+      logError(`Query "${query.name}" failed: ${String(error)}`);
       logSearch(db, { name: query.name, url: query.url || "unknown", cityCode: query.cityCode, keyword: query.keyword }, fetchedAt, 0);
     }
   }
 
   const since = new Date(Date.now() - reportWindowHours * 60 * 60 * 1000).toISOString();
   const events = loadRecentEvents(db, since);
+  logInfo(`Loaded ${events.length} recent events since ${since}`);
   const focusList = config.monitoring.focusArtists || [];
   const focusMatchesForModel = focusList.map((artist) => ({
     artist,
@@ -215,6 +219,7 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
       (evt) => evt.title?.toLowerCase().includes(artist.toLowerCase()) || evt.performers?.toLowerCase().includes(artist.toLowerCase())
     )
   }));
+  logInfo(`Built focus matches for ${focusList.length} artists`);
 
   const report = await generateReportWithModel({
     timezone,
@@ -232,5 +237,6 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
   });
 
   storeReport(db, report);
+  logInfo(`Report stored at ${report.runAt || fetchedAt}, events=${report.events.length}`);
   return report;
 };
