@@ -220,6 +220,7 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
   const events = loadRecentEvents(db, since);
   logInfo(`Loaded ${events.length} recent events since ${since}`);
   const focusList = config.monitoring.focusArtists || [];
+  //过滤出关注艺人的演出
   const focusMatchesForModel = focusList.map((artist) => ({
     artist,
     events: events.filter(
@@ -243,15 +244,7 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
     })
   });
 
-  const finalRunAt = report.runAt || nowInTz(timezone);
-  if (!report.runAt) {
-    logWarn("Report missing runAt from model, filled with current time.");
-    report.runAt = finalRunAt;
-  }
-  if (!report.timezone) {
-    report.timezone = timezone;
-  }
   storeReport(db, report);
-  logInfo(`Report stored at ${finalRunAt}, events=${report.events.length}`);
+  logInfo(`Report stored at ${report.runAt}, events=${report.events.length}`);
   return report;
 };
