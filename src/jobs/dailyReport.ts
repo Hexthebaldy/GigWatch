@@ -47,7 +47,6 @@ const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => 
       url = excluded.url,
       raw_json = excluded.raw_json
   `);
-  console.log('#event to upsert: ', event);
   try {
     const res = stmt.run(
       event.id,
@@ -64,7 +63,6 @@ const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => 
       fetchedAt,
       fetchedAt
     );
-    console.log('#res: ', res);
   } catch (err) {
     console.log('#upsert err: ', err);
   }
@@ -148,18 +146,34 @@ const buildQueriesFromConfig = (config: MonitoringConfig): MonitoringQuery[] => 
   const showStyles = config.monitoring.showStyles || [];
   const keywords = config.monitoring.keywords || [];
 
+  // 关注艺人查询（使用 keyword）
   for (const artist of focus) {
     base.push({ name: `艺人-${artist}`, keyword: artist });
   }
-  for (const code of cityCodes) {
-    base.push({ name: `城市-${code}`, cityCode: code });
+
+  // 城市 × 风格排列组合查询
+  if (cityCodes.length > 0 && showStyles.length > 0) {
+    for (const code of cityCodes) {
+      for (const style of showStyles) {
+        base.push({ name: `城市id${code}-风格id${style}`, cityCode: code, showStyle: style });
+      }
+    }
+  } else {
+    // 如果只有城市或只有风格，单独查询
+    for (const code of cityCodes) {
+      base.push({ name: `城市id-${code}`, cityCode: code });
+    }
+    for (const style of showStyles) {
+      base.push({ name: `风格id-${style}`, showStyle: style });
+    }
   }
-  for (const style of showStyles) {
-    base.push({ name: `风格-${style}`, showStyle: style });
-  }
+
+  // 关键词查询（使用 keyword）
   for (const kw of keywords) {
     base.push({ name: `关键词-${kw}`, keyword: kw });
   }
+
+  console.log('#all the queries: ', base)
   return base;
 };
 
@@ -176,10 +190,6 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
   logInfo(`Daily run start at ${fetchedAt}, queries=${queries.length}`);
 
   for (const query of queries) {
-    const filled = [query.cityCode, query.keyword, query.showStyle].filter(Boolean).length;
-    if (filled > 1) {
-      logWarn(`Query "${query.name}" has multiple params; only one of cityCode/keyword/showStyle should be set.`);
-    }
     try {
       logInfo(`Fetching query "${query.name}" ...`);
       const { events, url } = await fetchShowStartEvents({
@@ -196,7 +206,6 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
 
 
       for (const event of events) {
-        console.log("#event: ", event);
         upsertEvent(db, event, fetchedAt);
       }
       logInfo(`Query "${query.name}" success, events=${events.length}, url=${url}`);
