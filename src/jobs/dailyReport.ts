@@ -8,12 +8,14 @@ import { logError, logInfo, logWarn } from "../logger";
 
 // 写入或更新单条演出记录，冲突时刷新 last_seen_at 及核心字段
 const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => {
-  if (event.id === null || event.id === undefined) {
-    logWarn("Skip event without id");
+  if (!event.id || !event.title || !event.url) {
+    console.log("[warn] skip event missing required fields", {
+      id: event.id,
+      title: event.title,
+      url: event.url
+    });
     return;
   }
-  const safeTitle = (event.title || "").trim() || "未命名演出";
-  const safeUrl = event.url || `https://www.showstart.com/event/${event.id}`;
   const stmt = db.prepare(`
     INSERT INTO events (
       event_id,
@@ -30,22 +32,11 @@ const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => 
       first_seen_at,
       last_seen_at
     ) VALUES (
-      @event_id,
-      @title,
-      @city_name,
-      @site_name,
-      @show_time,
-      @price,
-      @performers,
-      @poster,
-      @url,
-      @source,
-      @raw_json,
-      @first_seen_at,
-      @last_seen_at
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
     )
     ON CONFLICT(event_id)
     DO UPDATE SET
+      title = excluded.title,
       last_seen_at = excluded.last_seen_at,
       price = excluded.price,
       show_time = excluded.show_time,
@@ -56,22 +47,27 @@ const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => 
       url = excluded.url,
       raw_json = excluded.raw_json
   `);
-
-  stmt.run({
-    event_id: event.id,
-    title: safeTitle,
-    city_name: event.cityName || "",
-    site_name: event.siteName || "",
-    show_time: event.showTime || "",
-    price: event.price || "",
-    performers: event.performers || "",
-    poster: event.poster || "",
-    url: safeUrl,
-    source: event.source || "showstart",
-    raw_json: JSON.stringify(event),
-    first_seen_at: fetchedAt,
-    last_seen_at: fetchedAt
-  });
+  console.log('#event to upsert: ', event);
+  try {
+    const res = stmt.run(
+      event.id,
+      event.title,
+      event.cityName || "",
+      event.siteName || "",
+      event.showTime || "",
+      event.price || "",
+      event.performers || "",
+      event.poster || "",
+      event.url,
+      event.source || "showstart",
+      JSON.stringify(event),
+      fetchedAt,
+      fetchedAt
+    );
+    console.log('#res: ', res);
+  } catch (err) {
+    console.log('#upsert err: ', err);
+  }
 };
 
 // 记录一次搜索日志，失败不阻塞主流程
@@ -85,18 +81,18 @@ const logSearch = (
   const url = options.url || "unknown";
   const stmt = db.prepare(`
     INSERT INTO search_logs (query_name, url, city_code, keyword, run_at, results_count)
-    VALUES (@query_name, @url, @city_code, @keyword, @run_at, @results_count)
+    VALUES (?, ?, ?, ?, ?, ?)
   `);
 
   try {
-    stmt.run({
-      query_name: queryName,
+    stmt.run(
+      queryName,
       url,
-      city_code: options.cityCode || "",
-      keyword: options.keyword || "",
-      run_at: fetchedAt,
-      results_count: resultsCount
-    });
+      options.cityCode || "",
+      options.keyword || "",
+      fetchedAt,
+      resultsCount
+    );
   } catch (error) {
     logError(`Failed to log search: ${String(error)}`);
   }
@@ -118,12 +114,9 @@ const storeReport = (db: Database, report: DailyReport) => {
   const runAt = report.runAt || nowInTz(report.timezone || "Asia/Shanghai");
   const stmt = db.prepare(`
     INSERT INTO reports (run_at, report_json)
-    VALUES (@run_at, @report_json)
+    VALUES (?, ?)
   `);
-  stmt.run({
-    run_at: runAt,
-    report_json: JSON.stringify(report)
-  });
+  stmt.run(runAt, JSON.stringify(report));
 };
 
 // 针对每个关注艺人收集最多 5 条匹配演出
@@ -198,7 +191,12 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
         url: query.url
       });
 
+      const sample = events.slice(0, 3).map((e) => e.title || "无标题").join(" | ");
+      logInfo(`Query "${query.name}" fetched ${events.length} events, sample=[${sample}], url=${url}`);
+
+
       for (const event of events) {
+        console.log("#event: ", event);
         upsertEvent(db, event, fetchedAt);
       }
       logInfo(`Query "${query.name}" success, events=${events.length}, url=${url}`);
@@ -236,7 +234,15 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
     })
   });
 
+  const finalRunAt = report.runAt || nowInTz(timezone);
+  if (!report.runAt) {
+    logWarn("Report missing runAt from model, filled with current time.");
+    report.runAt = finalRunAt;
+  }
+  if (!report.timezone) {
+    report.timezone = timezone;
+  }
   storeReport(db, report);
-  logInfo(`Report stored at ${report.runAt || fetchedAt}, events=${report.events.length}`);
+  logInfo(`Report stored at ${finalRunAt}, events=${report.events.length}`);
   return report;
 };
