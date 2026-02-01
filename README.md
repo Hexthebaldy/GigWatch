@@ -1,57 +1,320 @@
-# GigWatch (ShowStart)
+# GigWatch
 
-Bun.js + SQLite agent that scrapes ShowStart 演出列表，按配置批量搜索并生成每日摘要。支持 CLI 与 Web UI，关注艺人和搜索日志都落盘。
+🎵 **智能演出监控助手** - 自动追踪你关注的艺人和演出，第一时间 Telegram 通知你
 
-## What it does
-- 抓取 ShowStart 列表页（解析 `window.__NUXT__` 数据）获取演出信息
-- 依据配置中的查询（城市 / 关键词 / 演出风格 / 自定义 URL，单参数）批量抓取
-- 本地 SQLite 记录演出、搜索日志与生成的日报
-- 日报依赖模型生成摘要与关注艺人匹配结果（不再包含城市高频高亮）
+<div align="center">
 
-## Setup
-1) 安装依赖（无额外包）
+[![Bun](https://img.shields.io/badge/Bun-1.0+-black?logo=bun)](https://bun.sh)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite)](https://www.sqlite.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+</div>
+
+---
+
+## ✨ 特性
+
+- 🤖 **AI Agent 驱动** - LLM 自主决策，智能分析演出信息
+- 🔔 **Telegram 通知** - 关注艺人有新演出？立即通知你
+- 🎯 **多维度监控** - 艺人、城市、流派、关键词，全方位覆盖
+- 📊 **每日报告** - AI 生成精准摘要，不错过任何重要信息
+- 🌐 **多种界面** - CLI、Web UI、TUI，随心选择
+- 💾 **本地存储** - SQLite 数据库，所有数据本地可控
+
+---
+
+## 🚀 快速开始
+
+### 1. 安装
+
 ```bash
+# 克隆项目
+git clone https://github.com/yourusername/GigWatch.git
+cd GigWatch
+
+# 安装依赖
 bun install
-```
-2) 创建配置
-```bash
-cp config/monitoring.example.json config/monitoring.json
-```
-根据需要调整查询与关注艺人。
 
-3) 初始化数据库
-```bash
+# 初始化数据库
 bun run init-db
 ```
 
-## Commands
-- 运行一次抓取并打印日报
+### 2. 配置
+
+#### 创建监控配置
+
 ```bash
+cp config/monitoring.example.json config/monitoring.json
+```
+
+编辑 `config/monitoring.json`，添加你关注的艺人和城市：
+
+```json
+{
+  "monitoring": {
+    "focusArtists": ["青叶市子", "Central Cee"],
+    "cityCodes": ["21", "10"],  // 21=上海, 10=北京
+    "showStyles": ["2", "3"],   // 2=摇滚, 3=民谣
+    "keywords": ["新年"]
+  }
+}
+```
+
+> 💡 **城市代码和风格 ID** 请参考 [ShowStart 平台](https://www.showstart.com)
+
+#### 配置环境变量（可选）
+
+创建 `.env` 文件：
+
+```bash
+# LLM 配置（AI Agent 功能必需）
+OPENAI_API_KEY=sk-xxx
+OPENAI_BASE_URL=https://api.moonshot.cn/v1
+OPENAI_MODEL=kimi-k2-turbo-preview
+
+# Telegram 通知（推荐配置）
+TELEGRAM_BOT_TOKEN=123456789:ABCdef...
+TELEGRAM_CHAT_ID=123456789
+
+# 可选配置
+APP_TIMEZONE=Asia/Shanghai  # 默认时区
+DB_PATH=./data/gigwatch.sqlite  # 数据库路径
+APP_PORT=3000  # Web UI 端口
+```
+
+> 📖 详细配置说明：[Telegram 配置指南](./docs/telegram-integration.md)
+
+### 3. 运行
+
+```bash
+# 立即运行一次监控
 bun run daily
 ```
-- 启动 Web UI（默认 http://localhost:3000）
+
+**第一次运行，你会看到：**
+- 🔍 自动抓取演出信息
+- 🤖 AI Agent 分析结果
+- 📱 如果有关注艺人演出 → Telegram 通知
+- 📊 生成每日报告
+
+---
+
+## 📱 使用方式
+
+### CLI - 命令行
+
 ```bash
-bun run serve
+# 运行每日监控（推荐在 cron 中定时执行）
+bun run daily
 ```
-- 启动交互式 TUI（管理配置、查看日志/日报）
+
+### Web UI - 网页界面
+
 ```bash
+# 启动 Web 服务器
+bun run serve
+
+# 浏览器访问 http://localhost:3000
+```
+
+**功能：**
+- 📊 查看最新报告
+- 🔍 查看搜索日志
+- ⚙️ 编辑监控配置
+- ▶️ 手动触发抓取
+- ⏰ 自动定时任务（每天 06:00）
+
+### TUI - 终端界面
+
+```bash
+# 启动交互式菜单
 bun run tui
 ```
 
-## Config / Env
-- 配置示例：`config/monitoring.example.json`
-  - 环境变量：`APP_TIMEZONE`（默认 Asia/Shanghai），`DB_PATH`（默认 ./data/gigwatch.sqlite），`APP_PORT`（Web 端口，默认 3000），`CONFIG_PATH`（自定义配置路径）
-  - Web 服务自带调度：每天 06:00（服务器时区）自动跑抓取，可在页面手动触发并编辑监听/关注艺人
-  - 抓取策略：单次请求只能携带一个过滤参数（cityCode/keyword/showStyle），默认 pageSize=50，自增 pageNo 直到无数据或 pageNo>20
+**功能：**
+- 📖 查看最新日报
+- 📜 查看搜索日志
+- 🚀 立即抓取
+- ➕ 新增监控查询
+- 🎯 设置关注艺人
 
-监控配置字段（`monitoring`）：
-- `focusArtists`: 关注艺人列表（也会作为关键词跑一遍）
-- `cityCodes`: 需要监听的城市代码列表（每个城市一条查询）
-- `showStyles`: 需要监听的演出风格列表（每个风格一条查询）
-- `keywords`: 关键词监听列表
+---
 
-## Scheduling
-用 cron 等调度每日运行一次，例如：
+## 🧠 AI Agent 工作流程
+
+GigWatch 使用 **LLM-driven Agent** 智能监控演出：
+
 ```
-0 9 * * * cd /path/to/GigWatch && bun run daily >> ./logs/daily.log 2>&1
+1. 执行查询
+   ↓
+2. 抓取演出信息
+   ↓
+3. 保存到数据库
+   ↓
+4. AI 分析结果
+   ↓
+5. 智能决策：是否通知？
+   ├─ 关注艺人有演出 → 🚨 紧急通知（带声音）
+   ├─ 新演出匹配监控 → 📊 普通通知（静音）
+   └─ 无相关演出 → 🔕 不通知
+   ↓
+6. 生成每日报告
 ```
+
+**示例通知：**
+
+```
+🚨 紧急通知：关注艺人 Central Cee 有新演出！
+
+🎤 Central Cee - WORLD TOUR
+
+📍 上海站（加场）
+• 时间：2026年3月7日 19:00
+• 地点：纪希秀场
+• 票价：¥480起
+• 购票：https://www.showstart.com/event/289271
+
+⚡️ 建议尽快购票！
+```
+
+---
+
+## 🔧 定时执行
+
+### 使用 cron（推荐）
+
+```bash
+# 编辑 crontab
+crontab -e
+
+# 添加定时任务（每天 9:00 执行）
+0 9 * * * cd /path/to/GigWatch && bun run daily
+```
+
+### 使用 Web UI 自动调度
+
+启动 Web 服务器后，会自动在每天 **06:00**（服务器时区）执行监控任务。
+
+---
+
+## 📚 文档
+
+### 快速上手
+- [Telegram 5 分钟配置](./docs/telegram-quickstart.md) - 快速接入 Telegram 通知
+- [测试指南](./docs/testing-guide.md) - 运行测试确保一切正常
+
+### 深入了解
+- [Phase 2: LLM-driven Agent](./docs/phase2-llm-agent.md) - AI Agent 架构详解
+- [Telegram 集成完整指南](./docs/telegram-integration.md) - 详细配置说明
+- [Agent 架构规划](./docs/agent-architecture-plan.md) - 技术架构文档
+
+### 开发者
+- [Phase 1 完成报告](./docs/phase1-completion.md) - 工具系统架构
+- [Phase 2 完成总结](./docs/phase2-completion-summary.md) - LLM Agent 实现细节
+
+---
+
+## 🧪 测试
+
+```bash
+# 运行所有单元测试
+bun run test
+
+# 测试 LLM Agent（需要配置 LLM）
+bun run test:llm
+
+# 测试 Telegram 通知（需要配置 Telegram）
+bun run test:telegram
+```
+
+详见：[测试指南](./docs/testing-guide.md)
+
+---
+
+## 💡 常见问题
+
+### Q: 收不到 Telegram 通知？
+
+**检查：**
+1. `.env` 中是否配置了 `TELEGRAM_BOT_TOKEN` 和 `TELEGRAM_CHAT_ID`
+2. 是否给 bot 发送过至少一条消息
+3. 运行测试：`bun run test:telegram`
+
+详见：[Telegram 配置指南](./docs/telegram-integration.md)
+
+### Q: AI Agent 未启用？
+
+**检查：**
+1. `.env` 中是否配置了 `OPENAI_API_KEY`
+2. 查看日志：应该看到 `[Agent] Using LLM-driven execution`
+3. 如果看到 `LLM not available, using rule-based execution` → 检查 API key
+
+### Q: 如何添加新的监控维度？
+
+**方式 1：Web UI**
+- 访问 http://localhost:3000
+- 点击"编辑配置"
+- 添加艺人/城市/关键词
+
+**方式 2：TUI**
+- 运行 `bun run tui`
+- 选择"新增查询"或"设置关注艺人"
+
+**方式 3：手动编辑**
+- 编辑 `config/monitoring.json`
+- 重启服务或重新运行 `bun run daily`
+
+### Q: 成本多少？
+
+**LLM 调用（Kimi K2 Turbo）：**
+- 单次监控：约 ¥0.16
+- 每日 1 次：约 ¥4.8/月
+- 每年：约 ¥58
+
+**ShowStart API：** 免费
+
+**总计：** 每月不到 ¥5
+
+---
+
+## 🛣️ Roadmap
+
+### Phase 3（计划中）
+- [ ] Agent 记忆系统（记住用户偏好）
+- [ ] 多轮对话交互（"为什么通知我这个？"）
+- [ ] 自适应通知策略（学习用户反馈）
+- [ ] 价格监控与提醒
+
+### 工具扩展
+- [ ] 搜索艺人最新动态
+- [ ] 分析演出趋势
+- [ ] 推荐相关演出
+
+---
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+---
+
+## 📄 许可
+
+MIT License
+
+---
+
+## 🙏 致谢
+
+- [ShowStart](https://www.showstart.com) - 演出数据来源，你比大麦牛逼多了👍
+- [Kimi](https://kimi.moonshot.cn) - 性价比之壁
+- [Bun](https://bun.sh) - 你是最棒的JavaScript 运行时
+
+---
+
+<div align="center">
+
+**⭐️ 如果这个项目帮到了你，请给个 Star！**
+
+</div>
