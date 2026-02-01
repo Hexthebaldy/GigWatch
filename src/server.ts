@@ -6,6 +6,7 @@ import type { DailyReport, MonitoringConfig } from "./types";
 import { runDailyReportWithAgent } from "./jobs/dailyReport";
 import { nowInTz } from "./utils";
 import { showstartCities } from "./dictionary/showstartCities";
+import { showstartShowStyles } from "./dictionary/showstartShowStyles";
 
 type ConfigRef = { current: MonitoringConfig };
 
@@ -42,6 +43,13 @@ const cityOptionsHtml = showstartCities
   .map(
     (city) =>
       `<label class="city-item"><input type="checkbox" value="${city.code}" data-name="${city.name}" /><span>${city.name}</span></label>`
+  )
+  .join("");
+
+const showStyleOptionsHtml = showstartShowStyles
+  .map(
+    (style) =>
+      `<label class="city-item"><input type="checkbox" value="${style.code}" data-name="${style.name}" /><span>${style.name}</span></label>`
   )
   .join("");
 
@@ -91,8 +99,11 @@ const indexHtml = `
           ${cityOptionsHtml}
         </div>
         <div class="city-selected">已选：<span id="citySelected" class="city-tags"></span></div>
-        <label>演出风格 showStyles（逗号分隔）</label>
-        <textarea id="styleInput" rows="2" placeholder="如：摇滚, 流行"></textarea>
+        <label>演出风格 showStyles（多选）</label>
+        <div class="city-box" id="styleInput">
+          ${showStyleOptionsHtml}
+        </div>
+        <div class="city-selected">已选：<span id="styleSelected" class="city-tags"></span></div>
         <label>关键词 keywords（逗号分隔）</label>
         <textarea id="keywordInput" rows="2" placeholder="如：音乐节, 巡演"></textarea>
         <button id="saveMonitoring">保存配置</button>
@@ -109,6 +120,7 @@ const indexHtml = `
       const cityInput = document.getElementById('cityInput');
       const citySelected = document.getElementById('citySelected');
       const styleInput = document.getElementById('styleInput');
+      const styleSelected = document.getElementById('styleSelected');
       const keywordInput = document.getElementById('keywordInput');
       const saveMonitoringBtn = document.getElementById('saveMonitoring');
 
@@ -147,7 +159,11 @@ const indexHtml = `
           renderCitySelected();
         }
         if (Array.isArray(cfg.monitoring?.showStyles)) {
-          styleInput.value = cfg.monitoring.showStyles.join(',');
+          const selected = new Set(cfg.monitoring.showStyles);
+          Array.from(styleInput.querySelectorAll('input[type="checkbox"]')).forEach((checkbox) => {
+            checkbox.checked = selected.has(checkbox.value);
+          });
+          renderStyleSelected();
         }
         if (Array.isArray(cfg.monitoring?.keywords)) {
           keywordInput.value = cfg.monitoring.keywords.join(',');
@@ -164,13 +180,30 @@ const indexHtml = `
         citySelected.innerHTML = selected.map((code) => '<span class="city-tag">' + code + '</span>').join('');
       };
 
+      const renderStyleSelected = () => {
+        const selected = Array.from(styleInput.querySelectorAll('input[type="checkbox"]:checked'))
+          .map((checkbox) => checkbox.dataset.name || checkbox.value);
+        if (!selected.length) {
+          styleSelected.textContent = '（无）';
+          return;
+        }
+        styleSelected.innerHTML = selected.map((name) => '<span class="city-tag">' + name + '</span>').join('');
+      };
+
       cityInput.addEventListener('change', (event) => {
         if (event.target && event.target.type === 'checkbox') {
           renderCitySelected();
         }
       });
 
+      styleInput.addEventListener('change', (event) => {
+        if (event.target && event.target.type === 'checkbox') {
+          renderStyleSelected();
+        }
+      });
+
       renderCitySelected();
+      renderStyleSelected();
 
       runBtn.onclick = async () => {
         runBtn.disabled = true;
@@ -192,7 +225,8 @@ const indexHtml = `
         const artists = focusInput.value.split(',').map(s => s.trim()).filter(Boolean);
         const cities = Array.from(cityInput.querySelectorAll('input[type="checkbox"]:checked'))
           .map((checkbox) => checkbox.value);
-        const styles = styleInput.value.split(',').map(s => s.trim()).filter(Boolean);
+        const styles = Array.from(styleInput.querySelectorAll('input[type="checkbox"]:checked'))
+          .map((checkbox) => checkbox.value);
         const keywords = keywordInput.value.split(',').map(s => s.trim()).filter(Boolean);
         statusEl.textContent = '保存中...';
         const res = await fetch('/api/config/monitoring', {

@@ -1,0 +1,20 @@
+export const showstartShowStyles = [
+  { code: "3", name: "流行" },
+  { code: "8", name: "世界音乐" },
+  { code: "2", name: "摇滚" },
+  { code: "26", name: "独立" },
+  { code: "10", name: "爵士" },
+  { code: "7", name: "古典" },
+  { code: "6", name: "HipHop" },
+  { code: "12", name: "金属" },
+  { code: "4", name: "电子" },
+  { code: "11", name: "动漫" },
+  { code: "24", name: "极端金属" },
+  { code: "25", name: "核" },
+  { code: "5", name: "轻音乐" },
+  { code: "13", name: "布鲁斯" },
+  { code: "23", name: "朋克" },
+  { code: "28", name: "放克" },
+  { code: "1", name: "民谣" },
+  { code: "21", name: "话剧歌剧" }
+];
