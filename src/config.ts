@@ -11,6 +11,8 @@ export type AppEnv = {
   openaiApiKey?: string;
   openaiBaseUrl?: string;
   openaiModel?: string;
+  telegramBotToken?: string;
+  telegramChatId?: string;
 };
 
 export const loadConfig = (): MonitoringConfig => {
@@ -35,6 +37,8 @@ export const loadEnv = (): AppEnv => {
     serverPort: Number(Bun.env.APP_PORT || 3000),
     openaiApiKey: Bun.env.OPENAI_API_KEY,
     openaiBaseUrl: Bun.env.OPENAI_BASE_URL,
-    openaiModel: Bun.env.OPENAI_MODEL
+    openaiModel: Bun.env.OPENAI_MODEL,
+    telegramBotToken: Bun.env.TELEGRAM_BOT_TOKEN,
+    telegramChatId: Bun.env.TELEGRAM_CHAT_ID
   };
 };
