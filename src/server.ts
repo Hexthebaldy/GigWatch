@@ -5,6 +5,7 @@ import { getConfigPath } from "./config";
 import type { DailyReport, MonitoringConfig } from "./types";
 import { runDailyReportWithAgent } from "./jobs/dailyReport";
 import { nowInTz } from "./utils";
+import { showstartCities } from "./dictionary/showstartCities";
 
 type ConfigRef = { current: MonitoringConfig };
 
@@ -37,6 +38,13 @@ const saveConfig = (ref: ConfigRef) => {
   console.log(`Config saved to ${path}`);
 };
 
+const cityOptionsHtml = showstartCities
+  .map(
+    (city) =>
+      `<label class="city-item"><input type="checkbox" value="${city.code}" data-name="${city.name}" /><span>${city.name}</span></label>`
+  )
+  .join("");
+
 const indexHtml = `
 <!doctype html>
 <html lang="zh">
@@ -55,6 +63,13 @@ const indexHtml = `
       label { display:block; margin:6px 0 2px; font-weight:600; }
       input, textarea { width: 100%; padding: 6px; box-sizing: border-box; margin-bottom: 6px; }
       .grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+      .city-box { border: 1px solid #ddd; border-radius: 6px; padding: 6px; max-height: 220px; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 4px 10px; }
+      .city-item { display: grid; grid-template-columns: 16px 1fr; align-items: center; font-size: 14px; line-height: 1.2; gap: 6px; padding: 2px 0; }
+      .city-item input { margin: 0; justify-self: start; }
+      .city-item span { justify-self: start; }
+      .city-selected { margin: 6px 0; font-size: 12px; color: #444; }
+      .city-tags { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+      .city-tag { background: #f5f5f5; border-radius: 999px; padding: 2px 8px; }
     </style>
   </head>
   <body>
@@ -71,8 +86,11 @@ const indexHtml = `
         <h3>监听配置</h3>
         <label>关注艺人（逗号分隔）</label>
         <textarea id="focusInput" rows="3" placeholder="如：五月天, 周杰伦"></textarea>
-        <label>城市代码 cityCodes（逗号分隔）</label>
-        <textarea id="cityInput" rows="2" placeholder="如：21, 11"></textarea>
+        <label>城市 cityCodes（多选）</label>
+        <div class="city-box" id="cityInput">
+          ${cityOptionsHtml}
+        </div>
+        <div class="city-selected">已选：<span id="citySelected" class="city-tags"></span></div>
         <label>演出风格 showStyles（逗号分隔）</label>
         <textarea id="styleInput" rows="2" placeholder="如：摇滚, 流行"></textarea>
         <label>关键词 keywords（逗号分隔）</label>
@@ -89,6 +107,7 @@ const indexHtml = `
       const logsEl = document.getElementById('logs');
       const focusInput = document.getElementById('focusInput');
       const cityInput = document.getElementById('cityInput');
+      const citySelected = document.getElementById('citySelected');
       const styleInput = document.getElementById('styleInput');
       const keywordInput = document.getElementById('keywordInput');
       const saveMonitoringBtn = document.getElementById('saveMonitoring');
@@ -121,7 +140,11 @@ const indexHtml = `
           focusInput.value = cfg.monitoring.focusArtists.join(',');
         }
         if (Array.isArray(cfg.monitoring?.cityCodes)) {
-          cityInput.value = cfg.monitoring.cityCodes.join(',');
+          const selected = new Set(cfg.monitoring.cityCodes);
+          Array.from(cityInput.querySelectorAll('input[type="checkbox"]')).forEach((checkbox) => {
+            checkbox.checked = selected.has(checkbox.value);
+          });
+          renderCitySelected();
         }
         if (Array.isArray(cfg.monitoring?.showStyles)) {
           styleInput.value = cfg.monitoring.showStyles.join(',');
@@ -130,6 +153,24 @@ const indexHtml = `
           keywordInput.value = cfg.monitoring.keywords.join(',');
         }
       };
+
+      const renderCitySelected = () => {
+        const selected = Array.from(cityInput.querySelectorAll('input[type="checkbox"]:checked'))
+          .map((checkbox) => checkbox.dataset.name || checkbox.value);
+        if (!selected.length) {
+          citySelected.textContent = '（无）';
+          return;
+        }
+        citySelected.innerHTML = selected.map((code) => '<span class="city-tag">' + code + '</span>').join('');
+      };
+
+      cityInput.addEventListener('change', (event) => {
+        if (event.target && event.target.type === 'checkbox') {
+          renderCitySelected();
+        }
+      });
+
+      renderCitySelected();
 
       runBtn.onclick = async () => {
         runBtn.disabled = true;
@@ -149,7 +190,8 @@ const indexHtml = `
 
       saveMonitoringBtn.onclick = async () => {
         const artists = focusInput.value.split(',').map(s => s.trim()).filter(Boolean);
-        const cities = cityInput.value.split(',').map(s => s.trim()).filter(Boolean);
+        const cities = Array.from(cityInput.querySelectorAll('input[type="checkbox"]:checked'))
+          .map((checkbox) => checkbox.value);
         const styles = styleInput.value.split(',').map(s => s.trim()).filter(Boolean);
         const keywords = keywordInput.value.split(',').map(s => s.trim()).filter(Boolean);
         statusEl.textContent = '保存中...';
