@@ -10,6 +10,7 @@ import { ToolRegistry } from "../agent/tools/registry";
 import { buildEventMonitoringTask } from "../agent/task";
 import { showstartTool } from "../agent/tools/showstart";
 import { createDatabaseTool, createLoadEventsTool, createLogSearchTool } from "../agent/tools/database";
+import { createTelegramTool } from "../agent/tools/telegram";
 
 // 写入或更新单条演出记录，冲突时刷新 last_seen_at 及核心字段
 const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => {
@@ -254,7 +255,7 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
   return report;
 };
 
-// Agent-based version of runDailyReport for Phase 1
+// Agent-based version of runDailyReport (Phase 2: LLM-driven)
 export const runDailyReportWithAgent = async (db: Database, config: MonitoringConfig, env?: AppEnv) => {
   const timezone = config.app?.timezone || "Asia/Shanghai";
   const reportWindowHours = config.app?.reportWindowHours || 24;
@@ -269,13 +270,24 @@ export const runDailyReportWithAgent = async (db: Database, config: MonitoringCo
   registry.register(createLoadEventsTool(db));
   registry.register(createLogSearchTool(db));
 
-  // Create executor
-  const executor = new AgentExecutor(db, registry);
+  // Register Telegram tool if configured
+  if (env?.telegramBotToken && env?.telegramChatId) {
+    registry.register(createTelegramTool({
+      botToken: env.telegramBotToken,
+      chatId: env.telegramChatId
+    }));
+    logInfo("[Agent] Telegram tool registered");
+  } else {
+    logWarn("[Agent] Telegram not configured, notifications disabled");
+  }
+
+  // Create executor with env for LLM-driven execution
+  const executor = new AgentExecutor(db, registry, env);
 
   // Build task
   const task = buildEventMonitoringTask(config, queries);
 
-  // Execute task
+  // Execute task (will use LLM if available)
   const result = await executor.execute(task);
 
   if (!result.success) {

@@ -13,6 +13,7 @@
     "test:tools": "bun run test/tools.test.ts",
     "test:agent": "bun run test/agent.test.ts",
     "test:telegram": "bun run test/telegram.test.ts",
+    "test:llm": "bun run test/llm-agent.test.ts",
     "test:all": "bun run test && bun run test:telegram"
   },
   "dependencies": {
