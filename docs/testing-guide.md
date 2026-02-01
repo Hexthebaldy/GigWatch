@@ -12,6 +12,7 @@ bun run test
 bun run test:tools      # 工具系统测试
 bun run test:agent      # Agent 执行器测试
 bun run test:telegram   # Telegram 通知测试（需要配置）
+bun run test:llm        # LLM-driven Agent 测试（需要 LLM 配置）
 ```
 
 ---
@@ -23,7 +24,8 @@ test/
 ├── README.md              # 测试套件说明
 ├── tools.test.ts          # 工具系统单元测试
 ├── agent.test.ts          # Agent 执行器单元测试
-└── telegram.test.ts       # Telegram 集成测试
+├── telegram.test.ts       # Telegram 集成测试
+└── llm-agent.test.ts      # LLM-driven Agent 集成测试
 ```
 
 ---
@@ -117,6 +119,44 @@ export TELEGRAM_CHAT_ID="你的chat_id"
 ...
 
 🎉 All tests completed!
+```
+
+### 🧠 LLM-driven Agent (`llm-agent.test.ts`)
+
+**需要环境配置**：
+```bash
+export OPENAI_API_KEY="sk-xxx"                      # 必需
+export OPENAI_BASE_URL="https://api.moonshot.cn/v1" # 必需
+export TELEGRAM_BOT_TOKEN="xxx"                     # 可选
+export TELEGRAM_CHAT_ID="xxx"                       # 可选
+```
+
+**测试内容**
+- Agent 自主工具调用
+- 智能通知决策（如果配置了 Telegram）
+- 完整执行流程验证
+
+**示例输出**：
+```
+🤖 Testing LLM-driven Agent Execution
+
+✅ LLM configured
+   Model: kimi-k2-turbo-preview
+
+✅ Telegram configured
+   Chat ID: 123456789
+
+✅ Config loaded
+   Focus artists: 青叶市子, Central Cee
+
+🚀 Starting LLM-driven agent execution...
+
+✅ Agent execution completed!
+   Summary: 已发送关注艺人演出通知
+   Events: 287
+   Focus matches: 2
+
+🎉 Test completed successfully!
 ```
 
 ---

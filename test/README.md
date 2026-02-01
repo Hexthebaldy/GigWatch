@@ -42,6 +42,20 @@ export TELEGRAM_CHAT_ID="你的chat_id"
 bun run test/telegram.test.ts
 ```
 
+**`llm-agent.test.ts`** - LLM-driven Agent 集成测试
+- Agent 自主工具调用
+- 智能通知决策
+- 完整执行流程测试
+
+运行：
+```bash
+# 需要先配置环境变量（LLM 必需，Telegram 可选）
+export OPENAI_API_KEY="sk-xxx"
+export OPENAI_BASE_URL="https://api.moonshot.cn/v1"
+
+bun run test:llm
+```
+
 ---
 
 ## 快速运行
@@ -56,7 +70,10 @@ bun run test/tools.test.ts && bun run test/agent.test.ts
 
 ```bash
 # Telegram 测试（需要配置）
-bun run test/telegram.test.ts
+bun run test:telegram
+
+# LLM Agent 测试（需要 LLM 配置）
+bun run test:llm
 ```
 
 ---
