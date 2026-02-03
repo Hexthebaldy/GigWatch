@@ -4,11 +4,12 @@ import { initSchema } from "./db/schema";
 import { runDailyReport, runDailyReportWithAgent } from "./jobs/dailyReport";
 import { startServer } from "./server";
 import { startTui } from "./tui";
+import { startTelegramLongPolling } from "./telegram/poller";
 
 const main = async () => {
   const command = Bun.argv[2];
   if (!command) {
-    console.error("Usage: bun run src/cli.ts <init-db|daily|serve|tui>");
+    console.error("Usage: bun run src/cli.ts <init-db|daily|serve|tui|telegram>");
     process.exit(1);
   }
 
@@ -51,6 +52,11 @@ const main = async () => {
 
   if (command === "tui") {
     await startTui();
+    return;
+  }
+
+  if (command === "telegram") {
+    await startTelegramLongPolling(db, env);
     return;
   }
 

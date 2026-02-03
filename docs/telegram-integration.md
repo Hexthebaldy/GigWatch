@@ -44,6 +44,18 @@ export TELEGRAM_CHAT_ID="你的Chat ID"
 
 ## 使用方式
 
+### 长轮询模式（Telegram → GigWatch）
+
+适用于本地或内网环境，不需要公网 HTTPS。
+
+```bash
+# 启动 Telegram 长轮询监听
+bun run telegram
+```
+
+> 监听会读取 TELEGRAM_BOT_TOKEN 与 TELEGRAM_CHAT_ID，
+> 收到消息后由 Agent 解析并调用工具执行任务。
+
 ### 方式 1：在 Agent 中使用（推荐）
 
 ```typescript
