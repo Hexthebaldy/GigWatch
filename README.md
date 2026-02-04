@@ -30,7 +30,7 @@
 
 ```bash
 # 克隆项目
-git clone https://github.com/yourusername/GigWatch.git
+git clone https://github.com/Hexthebaldy/GigWatch.git
 cd GigWatch
 
 # 安装依赖
@@ -54,14 +54,15 @@ cp config/monitoring.example.json config/monitoring.json
 {
   "monitoring": {
     "focusArtists": ["青叶市子", "Central Cee"],
-    "cityCodes": ["21", "10"],  // 21=上海, 10=北京
-    "showStyles": ["2", "3"],   // 2=摇滚, 3=民谣
+    "cityCodes": ["21", "10"],  // 21=上海, 10=北京（见 src/dictionary/showstartCities.ts）
+    "showStyles": ["2", "3"],   // 2=摇滚, 3=流行（见 src/dictionary/showstartShowStyles.ts）
     "keywords": ["新年"]
   }
 }
 ```
 
-> 💡 **城市代码和风格 ID** 请参考 [ShowStart 平台](https://www.showstart.com)
+> 💡 城市/风格代码内置在本仓库的 `src/dictionary/` 中，Web UI 可直接勾选无需手填。
+> 📁 `src/dictionary/` 存放公共字典；`data/` 仅用于本地数据库文件。
 
 #### 配置环境变量（可选）
 
@@ -78,9 +79,10 @@ TELEGRAM_BOT_TOKEN=123456789:ABCdef...
 TELEGRAM_CHAT_ID=123456789
 
 # 可选配置
-APP_TIMEZONE=Asia/Shanghai  # 默认时区
+APP_TIMEZONE=Asia/Shanghai      # 默认时区，影响每日 06:00 定时任务
 DB_PATH=./data/gigwatch.sqlite  # 数据库路径
-APP_PORT=3000  # Web UI 端口
+APP_PORT=3000                   # Web UI 端口
+CONFIG_PATH=./config/monitoring.json  # 自定义配置文件路径（可选）
 ```
 
 > 📖 详细配置说明：[Telegram 配置指南](./docs/telegram-integration.md)
@@ -121,7 +123,7 @@ bun run serve
 **功能：**
 - 📊 查看最新报告
 - 🔍 查看搜索日志
-- ⚙️ 编辑监控配置
+- ⚙️ 编辑监控配置（城市/演出风格支持勾选多选，使用内置字典）
 - ▶️ 手动触发抓取
 - ⏰ 自动定时任务（每天 06:00）
 
