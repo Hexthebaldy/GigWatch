@@ -9,7 +9,7 @@
     "serve": "bun run src/cli.ts serve",
     "telegram": "bun run src/cli.ts telegram",
     "tui": "bun run src/cli.ts tui",
-    "lint": "bun --check src/config.ts src/db/schema.ts src/db/client.ts src/clients/showstart.ts src/jobs/dailyReport.ts src/server.ts src/utils.ts src/tui.ts src/agent/tools/base.ts src/agent/tools/registry.ts src/agent/tools/shows/config.ts src/agent/tools/shows/database.ts src/agent/tools/shows/dictionary.ts src/agent/tools/shows/readFile.ts src/agent/tools/shows/report.ts src/agent/tools/shows/runMonitoring.ts src/agent/tools/shows/search.ts src/agent/tools/shows/showstart.ts src/agent/tools/shows/telegram.ts src/agent/task.ts src/agent/executor.ts src/cli.ts",
+    "lint": "bun --check src/config.ts src/db/schema.ts src/db/client.ts src/clients/showstart.ts src/jobs/dailyReport.ts src/server.ts src/utils/datetime.ts src/utils/logger.ts src/tui.ts src/agent/tools/base.ts src/agent/tools/registry.ts src/agent/tools/shows/config.ts src/agent/tools/shows/database.ts src/agent/tools/shows/dictionary.ts src/agent/tools/shows/readFile.ts src/agent/tools/shows/report.ts src/agent/tools/shows/runMonitoring.ts src/agent/tools/shows/search.ts src/agent/tools/shows/showstart.ts src/agent/tools/shows/telegram.ts src/agent/task.ts src/agent/executor.ts src/cli.ts",
     "test": "bun run test/tools.test.ts && bun run test/agent.test.ts",
     "test:tools": "bun run test/tools.test.ts",
     "test:agent": "bun run test/agent.test.ts",

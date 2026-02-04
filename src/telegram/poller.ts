@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { AppEnv } from "../config";
-import { logError, logInfo, logWarn } from "../logger";
+import { logError, logInfo, logWarn } from "../utils/logger";
 import { ToolRegistry } from "../agent/tools/registry";
 import { showstartTool } from "../agent/tools/shows/showstart";
 import { createLoadEventsTool } from "../agent/tools/shows/database";

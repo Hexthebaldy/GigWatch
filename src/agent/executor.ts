@@ -2,8 +2,8 @@ import type { Database } from "bun:sqlite";
 import type { AgentTask, AgentResult } from "./task";
 import type { ToolRegistry } from "./tools/registry";
 import type { AppEnv } from "../config";
-import { logInfo, logError, logWarn } from "../logger";
-import { toIso } from "../utils";
+import { logInfo, logError, logWarn } from "../utils/logger";
+import { toIso } from "../utils/datetime";
 import OpenAI from "openai";
 
 export class AgentExecutor {

@@ -69,7 +69,7 @@ bun run daily
 
 ### Timezone Handling
 - All timestamps use the configured timezone (default: Asia/Shanghai)
-- `nowInTz()` and `toIso()` utilities in `src/utils.ts` handle timezone-aware formatting
+- `nowInTz()` and `toIso()` utilities in `src/utils/datetime.ts` handle timezone-aware formatting
 - Report window (default 24 hours) filters projects by `first_seen_at` timestamp
 
 ### Environment Variables

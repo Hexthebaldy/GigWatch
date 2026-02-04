@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import type { ToolRegistry } from "./tools/registry";
 import type { AppEnv } from "../config";
-import { logError, logInfo, logWarn } from "../logger";
+import { logError, logInfo, logWarn } from "../utils/logger";
 
 const SYSTEM_PROMPT =
   "你是 GigWatch 助手。用户用自然语言提出任务。你可以调用提供的工具完成任务。若缺少必要信息请先提问；若现有工具无法完成，请如实说明。";
