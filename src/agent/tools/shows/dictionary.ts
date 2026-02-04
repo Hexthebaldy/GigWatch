@@ -1,6 +1,6 @@
-import type { Tool } from "./base";
-import { showstartCities } from "../../dictionary/showstartCities";
-import { showstartShowStyles } from "../../dictionary/showstartShowStyles";
+import type { Tool } from "../base";
+import { showstartCities } from "../../../dictionary/showstartCities";
+import { showstartShowStyles } from "../../../dictionary/showstartShowStyles";
 
 const matchByName = (items: Array<{ code: string; name: string }>, name: string) => {
   const trimmed = name.trim();

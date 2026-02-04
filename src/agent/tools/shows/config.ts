@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs";
-import { getConfigPath, loadConfig } from "../../config";
-import type { MonitoringConfig } from "../../types";
-import type { Tool } from "./base";
+import { getConfigPath, loadConfig } from "../../../config";
+import type { MonitoringConfig } from "../../../types";
+import type { Tool } from "../base";
 
 const normalizeList = (values: string[]) => values.map((value) => value.trim()).filter(Boolean);
 

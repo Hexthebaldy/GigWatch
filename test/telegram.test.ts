@@ -9,7 +9,7 @@
  */
 
 import { loadEnv } from "../src/config";
-import { createTelegramTool } from "../src/agent/tools/telegram";
+import { createTelegramTool } from "../src/agent/tools/shows/telegram";
 
 const main = async () => {
   console.log("🤖 Testing Telegram notification...\n");

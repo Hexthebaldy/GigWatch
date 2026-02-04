@@ -19,14 +19,14 @@
 - 提供了 `toFunctionSchemas` 方法，方便转换为 LLM function calling 格式
 
 ### 3. 创建数据库 Tool 封装
-**文件**: `src/agent/tools/database.ts`
+**文件**: `src/agent/tools/shows/database.ts`
 - `createDatabaseTool`: 封装 upsertEvent 逻辑
 - `createLoadEventsTool`: 封装 loadRecentEvents 逻辑
 - `createLogSearchTool`: 封装 logSearch 逻辑
 - 所有工具都返回统一的 `{ success, data?, error? }` 格式
 
 ### 4. 将 ShowStart 客户端转换为 Tool
-**文件**: `src/agent/tools/showstart.ts`
+**文件**: `src/agent/tools/shows/showstart.ts`
 - 实现了 `showstartTool`，封装 `fetchShowStartEvents` 函数
 - 支持 cityCode, keyword, showStyle 等参数
 - 自动处理分页，返回所有结果
@@ -142,8 +142,8 @@ Events stored: 3
 ### 新增文件
 - `src/agent/tools/base.ts` - Tool 接口定义
 - `src/agent/tools/registry.ts` - Tool 注册表
-- `src/agent/tools/database.ts` - 数据库工具
-- `src/agent/tools/showstart.ts` - ShowStart 工具
+- `src/agent/tools/shows/database.ts` - 数据库工具
+- `src/agent/tools/shows/showstart.ts` - ShowStart 工具
 - `src/agent/task.ts` - Task 类型定义
 - `src/agent/executor.ts` - Agent 执行器
 - `docs/phase1-completion.md` - 本文档

@@ -13,8 +13,8 @@ import { Database } from "bun:sqlite";
 import { AgentExecutor } from "../src/agent/executor";
 import { ToolRegistry } from "../src/agent/tools/registry";
 import { buildEventMonitoringTask } from "../src/agent/task";
-import { showstartTool } from "../src/agent/tools/showstart";
-import { createDatabaseTool, createLoadEventsTool, createLogSearchTool } from "../src/agent/tools/database";
+import { showstartTool } from "../src/agent/tools/shows/showstart";
+import { createDatabaseTool, createLoadEventsTool, createLogSearchTool } from "../src/agent/tools/shows/database";
 import type { MonitoringConfig } from "../src/types";
 
 console.log("🤖 Testing Agent Executor\n");

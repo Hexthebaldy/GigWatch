@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
-import type { ShowStartEvent } from "../../types";
-import type { Tool } from "./base";
+import type { ShowStartEvent } from "../../../types";
+import type { Tool } from "../base";
 
 export const createSearchEventsTool = (db: Database): Tool => ({
   name: "search_events_db",

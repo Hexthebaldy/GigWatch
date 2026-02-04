@@ -1,6 +1,6 @@
 import { readFileSync, statSync } from "node:fs";
 import { resolve, sep } from "node:path";
-import type { Tool } from "./base";
+import type { Tool } from "../base";
 
 const ALLOWED_ROOTS = [
   "/Users/yangwenhao11/personal_dev_space/GigWatch/config",

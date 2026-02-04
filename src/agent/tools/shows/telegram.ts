@@ -1,4 +1,4 @@
-import type { Tool } from "./base";
+import type { Tool } from "../base";
 
 export interface TelegramConfig {
   botToken: string;

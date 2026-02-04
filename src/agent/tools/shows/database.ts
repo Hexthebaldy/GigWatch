@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
-import type { Tool } from "./base";
-import type { ShowStartEvent } from "../../types";
-import { toIso } from "../../utils";
+import type { Tool } from "../base";
+import type { ShowStartEvent } from "../../../types";
+import { toIso } from "../../../utils";
 
 export const createDatabaseTool = (db: Database): Tool => ({
   name: "upsert_event",

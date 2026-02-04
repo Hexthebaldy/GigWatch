@@ -1,5 +1,5 @@
-import type { Tool } from "./base";
-import { fetchShowStartEvents, type ShowStartSearchParams } from "../../clients/showstart";
+import type { Tool } from "../base";
+import { fetchShowStartEvents, type ShowStartSearchParams } from "../../../clients/showstart";
 
 export const showstartTool: Tool = {
   name: "fetch_showstart_events",

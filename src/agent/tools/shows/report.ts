@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
-import type { DailyReport } from "../../types";
-import type { Tool } from "./base";
+import type { DailyReport } from "../../../types";
+import type { Tool } from "../base";
 
 export const createLatestReportTool = (db: Database): Tool => ({
   name: "get_latest_report",

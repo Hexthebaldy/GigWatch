@@ -11,8 +11,8 @@
 
 import { Database } from "bun:sqlite";
 import { ToolRegistry } from "../src/agent/tools/registry";
-import { showstartTool } from "../src/agent/tools/showstart";
-import { createDatabaseTool, createLoadEventsTool, createLogSearchTool } from "../src/agent/tools/database";
+import { showstartTool } from "../src/agent/tools/shows/showstart";
+import { createDatabaseTool, createLoadEventsTool, createLogSearchTool } from "../src/agent/tools/shows/database";
 
 console.log("🧪 Testing Tool System\n");
 

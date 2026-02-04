@@ -61,7 +61,7 @@ bun run telegram
 ```typescript
 import { loadEnv } from "./config";
 import { ToolRegistry } from "./agent/tools/registry";
-import { createTelegramTool } from "./agent/tools/telegram";
+import { createTelegramTool } from "./agent/tools/shows/telegram";
 import { AgentExecutor } from "./agent/executor";
 
 const env = loadEnv();
@@ -85,7 +85,7 @@ const executor = new AgentExecutor(db, registry);
 
 ```typescript
 import { loadEnv } from "./config";
-import { createTelegramTool } from "./agent/tools/telegram";
+import { createTelegramTool } from "./agent/tools/shows/telegram";
 
 const env = loadEnv();
 

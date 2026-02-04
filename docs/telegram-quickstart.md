@@ -61,7 +61,7 @@ bun run scripts/test-telegram.ts
 ```typescript
 // 发送 Telegram 通知
 if (env?.telegramBotToken && env?.telegramChatId) {
-  const { createTelegramTool } = await import("../agent/tools/telegram");
+  const { createTelegramTool } = await import("../agent/tools/shows/telegram");
 
   const telegramTool = createTelegramTool({
     botToken: env.telegramBotToken,

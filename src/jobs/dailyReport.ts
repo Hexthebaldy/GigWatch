@@ -8,9 +8,9 @@ import { logError, logInfo, logWarn } from "../logger";
 import { AgentExecutor } from "../agent/executor";
 import { ToolRegistry } from "../agent/tools/registry";
 import { buildEventMonitoringTask } from "../agent/task";
-import { showstartTool } from "../agent/tools/showstart";
-import { createDatabaseTool, createLoadEventsTool, createLogSearchTool } from "../agent/tools/database";
-import { createTelegramTool } from "../agent/tools/telegram";
+import { showstartTool } from "../agent/tools/shows/showstart";
+import { createDatabaseTool, createLoadEventsTool, createLogSearchTool } from "../agent/tools/shows/database";
+import { createTelegramTool } from "../agent/tools/shows/telegram";
 
 // 写入或更新单条演出记录，冲突时刷新 last_seen_at 及核心字段
 const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => {

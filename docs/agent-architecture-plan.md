@@ -289,7 +289,7 @@ CREATE TABLE notifications (
 
 **步骤**：
 1. 保留 `showstart.ts` 但改造为 Tool
-   - 创建 `src/agent/tools/showstart.ts`
+   - 创建 `src/agent/tools/shows/showstart.ts`
    - 实现 `Tool` 接口
    - 迁移现有的 `fetchShowStartEvents` 逻辑
 
@@ -304,7 +304,7 @@ CREATE TABLE notifications (
    - 保持数据库操作不变
 
 4. 添加数据库工具
-   - 创建 `src/agent/tools/database.ts`
+   - 创建 `src/agent/tools/shows/database.ts`
    - 封装 `upsertEvent`、`loadRecentEvents` 等操作
 
 **验证**：
@@ -318,7 +318,7 @@ CREATE TABLE notifications (
 **步骤**：
 1. 添加搜索引擎工具
    - 创建 `src/clients/search.ts` (Google/Bing API 客户端)
-   - 创建 `src/agent/tools/search.ts`
+   - 创建 `src/agent/tools/shows/search.ts`
    - 设置环境变量 `SEARCH_API_KEY`
 
 2. 添加通知工具

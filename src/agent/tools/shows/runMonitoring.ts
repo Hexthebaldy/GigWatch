@@ -1,8 +1,8 @@
 import type { Database } from "bun:sqlite";
-import type { AppEnv } from "../../config";
-import { loadConfig } from "../../config";
-import { runDailyReportWithAgent } from "../../jobs/dailyReport";
-import type { Tool } from "./base";
+import type { AppEnv } from "../../../config";
+import { loadConfig } from "../../../config";
+import { runDailyReportWithAgent } from "../../../jobs/dailyReport";
+import type { Tool } from "../base";
 
 export const createRunMonitoringTool = (db: Database, env: AppEnv): Tool => ({
   name: "run_monitoring_now",
