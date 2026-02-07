@@ -11,6 +11,7 @@ import { buildEventMonitoringTask } from "../agent/task";
 import { showstartTool } from "../agent/tools/shows/showstart";
 import { createDatabaseTool, createLoadEventsTool, createLogSearchTool } from "../agent/tools/shows/database";
 import { createTelegramTool } from "../agent/tools/shows/telegram";
+import { webSearchTool } from "../agent/tools/common/webSearch";
 
 // 写入或更新单条演出记录，冲突时刷新 last_seen_at 及核心字段
 const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => {
@@ -266,6 +267,7 @@ export const runDailyReportWithAgent = async (db: Database, config: MonitoringCo
   // Initialize tool registry
   const registry = new ToolRegistry();
   registry.register(showstartTool);
+  registry.register(webSearchTool);
   registry.register(createDatabaseTool(db));
   registry.register(createLoadEventsTool(db));
   registry.register(createLogSearchTool(db));

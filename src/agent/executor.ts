@@ -255,6 +255,7 @@ export class AgentExecutor {
 当前时间：${fetchedAt}
 关注艺人：${focusArtists.join("、")}
 时间窗口：最近 ${reportWindowHours} 小时
+可使用 web_search 获取外部信息，不限制使用时机。
 
 请开始执行任务。`;
 

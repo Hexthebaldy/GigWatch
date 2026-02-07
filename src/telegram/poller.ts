@@ -10,6 +10,7 @@ import { createGetConfigTool, createUpdateAppConfigTool, createUpdateMonitoringC
 import { createRunMonitoringTool } from "../agent/tools/shows/runMonitoring";
 import { resolveCityCodeTool, resolveShowStyleTool } from "../agent/tools/shows/dictionary";
 import { createReadFileTool } from "../agent/tools/shows/readFile";
+import { webSearchTool } from "../agent/tools/common/webSearch";
 import { MessageRouter } from "../agent/messageRouter";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -37,6 +38,7 @@ export const startTelegramLongPolling = async (db: Database, env: AppEnv) => {
   }
 
   const registry = new ToolRegistry();
+  registry.register(webSearchTool);
   registry.register(showstartTool);
   registry.register(createLoadEventsTool(db));
   registry.register(createSearchEventsTool(db));
