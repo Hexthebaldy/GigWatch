@@ -97,7 +97,6 @@ export const webSearchTool: Tool = {
       const html = await response.text();
       const allResults = extractSearchResults(html);
       const results = allResults.slice(0, capped);
-      console.log('#results: ', results);
       return {
         success: true,
         data: {
