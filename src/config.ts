@@ -11,6 +11,7 @@ export type AppEnv = {
   openaiApiKey?: string;
   openaiBaseUrl?: string;
   openaiModel?: string;
+  openaiTemperature?: number;
   telegramBotToken?: string;
   telegramChatId?: string;
 };
@@ -31,6 +32,7 @@ export const getConfigPath = () => {
 };
 
 export const loadEnv = (): AppEnv => {
+  const temperature = Number(Bun.env.OPENAI_TEMPERATURE);
   return {
     timezone: Bun.env.APP_TIMEZONE || "Asia/Shanghai",
     dbPath: Bun.env.DB_PATH || "./data/gigwatch.sqlite",
@@ -38,6 +40,7 @@ export const loadEnv = (): AppEnv => {
     openaiApiKey: Bun.env.OPENAI_API_KEY,
     openaiBaseUrl: Bun.env.OPENAI_BASE_URL,
     openaiModel: Bun.env.OPENAI_MODEL,
+    openaiTemperature: Number.isFinite(temperature) ? temperature : undefined,
     telegramBotToken: Bun.env.TELEGRAM_BOT_TOKEN,
     telegramChatId: Bun.env.TELEGRAM_CHAT_ID
   };

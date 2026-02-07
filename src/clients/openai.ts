@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import type { DailyReport, ShowStartEvent } from "../types";
 import type { AppEnv } from "../config";
+import { resolveModelTemperature } from "./modelTemperature";
 
 const extractJson = (content: string) => {
   const fenced = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
@@ -53,10 +54,11 @@ FocusArtists: ${JSON.stringify(
   ];
 
   try {
+    const model = env.openaiModel || "kimi-k2-turbo-preview";
     const completion = await client.chat.completions.create({
-      model: env.openaiModel || "kimi-k2-turbo-preview",
+      model,
       messages,
-      temperature: 0.4
+      temperature: resolveModelTemperature(model, env.openaiTemperature, 1)
     });
     const content = completion.choices[0]?.message?.content;
     if (!content) return input.fallback();

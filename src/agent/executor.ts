@@ -5,10 +5,12 @@ import type { AppEnv } from "../config";
 import { logInfo, logError, logWarn } from "../utils/logger";
 import { toIso } from "../utils/datetime";
 import OpenAI from "openai";
+import { resolveModelTemperature } from "../clients/modelTemperature";
 
 export class AgentExecutor {
   private llmClient?: OpenAI;
   private llmModel?: string;
+  private llmTemperature = 1;
 
   constructor(
     private db: Database,
@@ -22,6 +24,7 @@ export class AgentExecutor {
         baseURL: env.openaiBaseUrl
       });
       this.llmModel = env.openaiModel || "kimi-k2-turbo-preview";
+      this.llmTemperature = resolveModelTemperature(this.llmModel, env.openaiTemperature, 1);
     }
   }
 
@@ -285,7 +288,7 @@ ${queries.map((q: any, i: number) => `${i + 1}. ${q.name}: ${JSON.stringify(q)}`
           messages,
           tools: availableTools,
           tool_choice: "auto",
-          temperature: 0.3
+          temperature: this.llmTemperature
         });
 
         const choice = response.choices[0];
