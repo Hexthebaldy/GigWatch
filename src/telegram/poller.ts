@@ -12,7 +12,7 @@ import { resolveCityCodeTool, resolveShowStyleTool } from "../agent/tools/shows/
 import { createReadFileTool } from "../agent/tools/shows/readFile";
 import { webFetchTool } from "../agent/tools/common/webFetch";
 import { webSearchTool } from "../agent/tools/common/webSearch";
-import { MessageRouter } from "../agent/messageRouter";
+import { ChatService, type IncomingChatMessage } from "../agent/chatService";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -30,6 +30,47 @@ const sendTelegramMessage = async (token: string, chatId: string, text: string) 
     const errorBody = await response.json().catch(() => ({}));
     throw new Error(errorBody.description || response.statusText);
   }
+};
+
+const toIncomingChatMessage = (update: any): IncomingChatMessage | undefined => {
+  const message = update?.message;
+  const text = message?.text?.trim();
+  const chatId = message?.chat?.id?.toString?.();
+  const userId = message?.from?.id?.toString?.();
+  if (!text || !chatId) return undefined;
+  return {
+    source: "telegram",
+    text,
+    externalChatId: chatId,
+    externalUserId: userId,
+    metadata: {
+      updateId: update.update_id
+    }
+  };
+};
+
+const processTelegramUpdate = async (
+  update: any,
+  env: AppEnv,
+  chatService: ChatService
+) => {
+  const incoming = toIncomingChatMessage(update);
+  if (!incoming) return;
+
+  const incomingChatId = incoming.externalChatId;
+  if (!incomingChatId) return;
+
+  if (env.telegramChatId && incomingChatId !== env.telegramChatId) {
+    logWarn(`[Telegram] Ignored message from chat ${incomingChatId}`);
+    return;
+  }
+
+  const preview = incoming.text.length > 120 ? `${incoming.text.slice(0, 120)}…` : incoming.text;
+  logInfo(`[Telegram] Message from ${incomingChatId}: ${preview}`);
+
+  const result = await chatService.handleIncomingMessage(incoming);
+  const replyChatId = env.telegramChatId || incomingChatId;
+  await sendTelegramMessage(env.telegramBotToken!, replyChatId, result.text);
 };
 
 export const startTelegramLongPolling = async (db: Database, env: AppEnv) => {
@@ -53,7 +94,7 @@ export const startTelegramLongPolling = async (db: Database, env: AppEnv) => {
   registry.register(resolveShowStyleTool);
   registry.register(createReadFileTool());
 
-  const router = new MessageRouter(registry, env);
+  const chatService = new ChatService(db, registry, env);
 
   let offset = 0;
   let backoff = 1000;
@@ -86,24 +127,7 @@ export const startTelegramLongPolling = async (db: Database, env: AppEnv) => {
       }
       for (const update of updates) {
         offset = update.update_id + 1;
-        const message = update.message;
-        const text = message?.text?.trim();
-        if (!text) continue;
-
-        const incomingChatId = message?.chat?.id?.toString?.();
-        if (!incomingChatId) continue;
-
-        if (env.telegramChatId && incomingChatId !== env.telegramChatId) {
-          logWarn(`[Telegram] Ignored message from chat ${incomingChatId}`);
-          continue;
-        }
-
-        const preview = text.length > 120 ? `${text.slice(0, 120)}…` : text;
-        logInfo(`[Telegram] Message from ${incomingChatId}: ${preview}`);
-
-        const reply = await router.handleMessage(text);
-        const replyChatId = env.telegramChatId || incomingChatId;
-        await sendTelegramMessage(env.telegramBotToken, replyChatId, reply);
+        await processTelegramUpdate(update, env, chatService);
       }
 
       backoff = 1000;
