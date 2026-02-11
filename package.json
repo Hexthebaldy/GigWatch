@@ -19,6 +19,7 @@
     "test:all": "bun run test && bun run test:telegram"
   },
   "dependencies": {
+    "@larksuiteoapi/node-sdk": "^1.54.0",
     "openai": "^4.56.0"
   },
   "devDependencies": {
