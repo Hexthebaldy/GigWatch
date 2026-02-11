@@ -17,6 +17,7 @@
 
 - 🤖 **AI Agent 驱动** - LLM 自主决策，智能分析演出信息
 - 🔔 **Telegram 通知** - 关注艺人有新演出？立即通知你
+- 📨 **飞书 Bot 对话** - 在飞书里直接和 GigWatch 对话，消息自动落库
 - 🎯 **多维度监控** - 艺人、城市、流派、关键词，全方位覆盖
 - 📊 **每日报告** - AI 生成精准摘要，不错过任何重要信息
 - 🌐 **多种界面** - CLI、Web UI、TUI，随心选择
@@ -78,6 +79,11 @@ OPENAI_MODEL=kimi-k2-turbo-preview
 TELEGRAM_BOT_TOKEN=123456789:ABCdef...
 TELEGRAM_CHAT_ID=123456789
 
+# Feishu Bot（可选）
+FEISHU_APP_ID=cli_xxx
+FEISHU_APP_SECRET=xxx
+FEISHU_BASE_URL=https://open.feishu.cn
+
 # 可选配置
 APP_TIMEZONE=Asia/Shanghai      # 默认时区，影响每日 06:00 定时任务
 DB_PATH=./data/gigwatch.sqlite  # 数据库路径
@@ -86,6 +92,7 @@ CONFIG_PATH=./config/monitoring.json  # 自定义配置文件路径（可选）
 ```
 
 > 📖 详细配置说明：[Telegram 配置指南](./docs/telegram-integration.md)
+> 📨 飞书接入说明：[飞书 Bot 注册与接入指南](./docs/feishu-bot-setup.md)
 
 ### 3. 运行
 
@@ -109,6 +116,12 @@ bun run daily
 ```bash
 # 运行每日监控（推荐在 cron 中定时执行）
 bun run daily
+
+# 启动 Telegram 长轮询入口
+bun run src/cli.ts telegram
+
+# 启动飞书 Bot 长连接入口
+bun run src/cli.ts feishu
 ```
 
 ### Web UI - 网页界面
@@ -204,6 +217,7 @@ crontab -e
 
 ### 快速上手
 - [Telegram 5 分钟配置](./docs/telegram-quickstart.md) - 快速接入 Telegram 通知
+- [飞书 Bot 注册与接入指南](./docs/feishu-bot-setup.md) - 从创建应用到长连接联调
 - [测试指南](./docs/testing-guide.md) - 运行测试确保一切正常
 
 ### 深入了解
