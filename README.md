@@ -93,6 +93,7 @@ CONFIG_PATH=./config/monitoring.json  # 自定义配置文件路径（可选）
 
 > 📖 详细配置说明：[Telegram 配置指南](./docs/telegram-integration.md)
 > 📨 飞书接入说明：[飞书 Bot 注册与接入指南](./docs/feishu-bot-setup.md)
+> ⚠️ 飞书后台改完机器人/事件配置后，务必发布新版本；未发布时客户端可能看不到输入框。
 
 ### 3. 运行
 
@@ -121,7 +122,7 @@ bun run daily
 bun run src/cli.ts telegram
 
 # 启动飞书 Bot 长连接入口
-bun run src/cli.ts feishu
+bun run feishu
 ```
 
 ### Web UI - 网页界面

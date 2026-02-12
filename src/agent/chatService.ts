@@ -20,7 +20,7 @@ const trimStepPayload = (payload: Record<string, unknown>): Record<string, unkno
   };
 };
 
-export type ChatSource = "telegram" | "web" | "tui";
+export type ChatSource = "telegram" | "web" | "tui" | "feishu";
 
 export type IncomingChatMessage = {
   source: ChatSource;

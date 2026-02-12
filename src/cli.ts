@@ -5,11 +5,12 @@ import { runDailyReport, runDailyReportWithAgent } from "./jobs/dailyReport";
 import { startServer } from "./server";
 import { startTui } from "./tui";
 import { startTelegramLongPolling } from "./telegram/poller";
+import { startFeishuLongConnection } from "./feishu/poller";
 
 const main = async () => {
   const command = Bun.argv[2];
   if (!command) {
-    console.error("Usage: bun run src/cli.ts <init-db|daily|serve|tui|telegram>");
+    console.error("Usage: bun run src/cli.ts <init-db|daily|serve|tui|telegram|feishu>");
     process.exit(1);
   }
 
@@ -57,6 +58,11 @@ const main = async () => {
 
   if (command === "telegram") {
     await startTelegramLongPolling(db, env);
+    return;
+  }
+
+  if (command === "feishu") {
+    await startFeishuLongConnection(db, env);
     return;
   }
 

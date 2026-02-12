@@ -14,6 +14,9 @@ export type AppEnv = {
   openaiTemperature?: number;
   telegramBotToken?: string;
   telegramChatId?: string;
+  feishuAppId?: string;
+  feishuAppSecret?: string;
+  feishuBaseUrl?: string;
 };
 
 export const loadConfig = (): MonitoringConfig => {
@@ -42,6 +45,9 @@ export const loadEnv = (): AppEnv => {
     openaiModel: Bun.env.OPENAI_MODEL,
     openaiTemperature: Number.isFinite(temperature) ? temperature : undefined,
     telegramBotToken: Bun.env.TELEGRAM_BOT_TOKEN,
-    telegramChatId: Bun.env.TELEGRAM_CHAT_ID
+    telegramChatId: Bun.env.TELEGRAM_CHAT_ID,
+    feishuAppId: Bun.env.FEISHU_APP_ID,
+    feishuAppSecret: Bun.env.FEISHU_APP_SECRET,
+    feishuBaseUrl: Bun.env.FEISHU_BASE_URL
   };
 };
