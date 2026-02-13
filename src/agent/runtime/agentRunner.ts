@@ -82,6 +82,14 @@ export class AgentRunner {
     while (iterations < MAX_ITERATIONS) {
       iterations += 1;
       try {
+        logInfo(
+          `[AgentRunner] LLM context (iteration ${iterations}) ${JSON.stringify({
+            model: this.llmModel,
+            temperature: this.temperature,
+            messages
+          })}`
+        );
+
         const response = await this.llm.chat.completions.create({
           model: this.llmModel,
           messages,
