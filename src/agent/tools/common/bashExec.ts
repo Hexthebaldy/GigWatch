@@ -10,6 +10,7 @@ import type { Tool } from "../base";
  *
  * 设计边界：
  * - 仅支持 `command + args`（不支持 shell 脚本拼接）；
+ * - 仅允许系统原生命令白名单，避免依赖额外安装的第三方 CLI；
  * - 执行目录固定为 `process.cwd()`；
  * - 对路径型参数做工作区边界检查，禁止越界访问；
  * - 对高风险命令做黑名单拦截；
@@ -48,6 +49,42 @@ const BLOCKED_COMMANDS = new Set([
   "ssh",
   "scp",
   "rsync"
+]);
+
+// 只允许常见 Unix/macOS 原生命令，避免模型随意依赖额外安装的工具（如 rg/jq 等）。
+const NATIVE_UNIX_COMMANDS = new Set([
+  "awk",
+  "basename",
+  "cat",
+  "cp",
+  "cut",
+  "date",
+  "dirname",
+  "echo",
+  "env",
+  "find",
+  "git",
+  "grep",
+  "head",
+  "id",
+  "ls",
+  "mkdir",
+  "mv",
+  "paste",
+  "pwd",
+  "realpath",
+  "rm",
+  "sed",
+  "sort",
+  "stat",
+  "tail",
+  "touch",
+  "tr",
+  "uname",
+  "uniq",
+  "wc",
+  "whoami",
+  "xargs"
 ]);
 
 // 禁止参数中出现控制字符，防止注入换行等非常规输入。
@@ -101,7 +138,7 @@ export const bashExecTool: Tool = {
     properties: {
       command: {
         type: "string",
-        description: "要执行的命令名，例如 rg、ls、cat"
+        description: "要执行的命令名（仅限系统原生命令），例如 find、grep、ls、cat"
       },
       args: {
         type: "array",
@@ -143,6 +180,13 @@ export const bashExecTool: Tool = {
       }
       if (BLOCKED_COMMANDS.has(cmd)) {
         return { success: false, error: `command "${cmd}" is blocked` };
+      }
+      if (!NATIVE_UNIX_COMMANDS.has(cmd)) {
+        return {
+          success: false,
+          error:
+            `command "${cmd}" is not allowed. Only native macOS commands are supported by bash_exec.`
+        };
       }
 
       // 2) 参数标准化 + 控制字符检查
@@ -197,16 +241,53 @@ export const bashExecTool: Tool = {
         child.kill("SIGKILL");
       }, timeout);
 
-      // 8) 等待进程结束，统一收敛退出码。
-      const exitCode = await new Promise<number | null>((resolveExit) => {
-        child.on("close", (code) => resolveExit(code));
-      }).finally(() => clearTimeout(timeoutHandle));
+      // 8) 等待子进程结束，并把「正常结束」与「启动失败」统一收敛为一个结果对象。
+      //    这里必须同时监听 close + error：
+      //    - close: 进程已启动并结束，返回退出码 code（可能为 0 / 非 0 / null）
+      //    - error: 进程启动阶段失败（例如命令不存在 ENOENT、无执行权限 EACCES）
+      //    如果只等 close，不监听 error，某些场景会抛未处理错误并影响主进程稳定性。
+      const { exitCode, spawnError } = await new Promise<{ exitCode: number | null; spawnError?: string }>(
+        (resolveResult) => {
+          // 防重入保护：error 和 close 在边界情况下可能先后触发，只允许 resolve 一次。
+          let settled = false;
+          const finalize = (result: { exitCode: number | null; spawnError?: string }) => {
+            if (settled) return;
+            settled = true;
+            resolveResult(result);
+          };
+
+          // 启动失败分支：将异常转成字符串写入 spawnError，exitCode 置为 null。
+          child.once("error", (error) => {
+            const message = error instanceof Error ? error.message : String(error);
+            finalize({ exitCode: null, spawnError: message });
+          });
+
+          // 正常结束分支：记录进程退出码。即使 code 为 null，也由上层统一处理。
+          child.once("close", (code) => finalize({ exitCode: code }));
+        }
+      ).finally(() => clearTimeout(timeoutHandle)); // 无论成功/失败都清理超时定时器，避免泄漏。
 
       // 9) 超时和正常结束分别返回结构化结果，便于上层决策与日志审计。
       if (timedOut) {
         return {
           success: false,
           error: `command timed out after ${timeout}ms`,
+          data: {
+            command: cmd,
+            args: argv,
+            cwd: root,
+            stdout,
+            stderr,
+            stdoutTruncated,
+            stderrTruncated
+          }
+        };
+      }
+
+      if (spawnError) {
+        return {
+          success: false,
+          error: `failed to start command: ${spawnError}`,
           data: {
             command: cmd,
             args: argv,
