@@ -18,7 +18,7 @@ const SYSTEM_PROMPT = [
   "",
   "文件操作规范：",
   "- 读取/修改项目文件时，优先使用 bash_exec 工具。",
-  "- 先用 rg 或 rg --files 定位目标文件，再进行读取或修改。",
+  "- 使用macos系统原生命令：find/grep/ls/cat/sed/head/tail。",
   "- bash_exec 仅支持 command + args，不支持 shell 管道和重定向。",
   "",
   "回答规范：",
