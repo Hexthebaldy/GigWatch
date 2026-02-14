@@ -144,6 +144,7 @@ const processMessageEvent = async (
   chatService: ChatService,
   feishuClient: FeishuClient
 ) => {
+  //把 SDK 原始事件统一解析成内部结构
   const event = toLongConnEventPayload(rawEvent);
   if (!event) return;
 
@@ -192,7 +193,7 @@ export const startFeishuLongConnection = async (db: Database, env: AppEnv) => {
     baseUrl: env.feishuBaseUrl
   });
 
-  // 只订阅并处理文本消息事件，其余事件忽略。
+  // 事件分发器，只订阅并处理文本消息事件，其余事件忽略。register的参数里key是事件名，value是handler
   const eventDispatcher = new sdk.EventDispatcher({}).register({
     "im.message.receive_v1": async (data: unknown) => {
       // Return quickly to Feishu and process message asynchronously.
@@ -202,12 +203,14 @@ export const startFeishuLongConnection = async (db: Database, env: AppEnv) => {
     }
   });
 
+  //创建飞书web socket长连接客户端
   const wsClient = new sdk.WSClient({
     appId: env.feishuAppId,
     appSecret: env.feishuAppSecret,
     loggerLevel: sdk.LoggerLevel.info
   });
 
+  //正式建立长连接，并把事件分发器挂上去
   await wsClient.start({
     eventDispatcher
   });
