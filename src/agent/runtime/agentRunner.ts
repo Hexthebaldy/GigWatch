@@ -115,6 +115,9 @@ export class AgentRunner {
 
         if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
           logInfo(`[AgentRunner] LLM requested ${assistantMessage.tool_calls.length} tool calls`);
+          logInfo(
+            `[AgentRunner] Tools selected: ${assistantMessage.tool_calls.map((call) => call.function.name).join(", ")}`
+          );
           for (const toolCall of assistantMessage.tool_calls) {
             const toolName = toolCall.function.name;
             let toolArgs: Record<string, unknown> = {};
