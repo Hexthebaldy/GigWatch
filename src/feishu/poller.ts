@@ -6,12 +6,10 @@ import { showstartTool } from "../agent/tools/shows/showstart";
 import { createLoadEventsTool } from "../agent/tools/shows/database";
 import { createLatestReportTool } from "../agent/tools/shows/report";
 import { createSearchEventsTool } from "../agent/tools/shows/search";
-import { createGetConfigTool, createUpdateAppConfigTool, createUpdateMonitoringConfigTool } from "../agent/tools/shows/config";
 import { createRunMonitoringTool } from "../agent/tools/shows/runMonitoring";
-import { resolveCityCodeTool, resolveShowStyleTool } from "../agent/tools/shows/dictionary";
-import { createReadFileTool } from "../agent/tools/shows/readFile";
 import { webFetchTool } from "../agent/tools/common/webFetch";
 import { webSearchTool } from "../agent/tools/common/webSearch";
+import { bashExecTool } from "../agent/tools/common/bashExec";
 import { ChatService, type IncomingChatMessage } from "../agent/chatService";
 import { FeishuClient, parseFeishuTextContent, type FeishuSenderId } from "../clients/feishu";
 
@@ -172,19 +170,14 @@ export const startFeishuLongConnection = async (db: Database, env: AppEnv) => {
   const sdk = await loadFeishuSdk();
 
   const registry = new ToolRegistry();
+  registry.register(bashExecTool);
   registry.register(webFetchTool);
   registry.register(webSearchTool);
   registry.register(showstartTool);
   registry.register(createLoadEventsTool(db));
   registry.register(createSearchEventsTool(db));
   registry.register(createLatestReportTool(db));
-  registry.register(createGetConfigTool());
-  registry.register(createUpdateMonitoringConfigTool());
-  registry.register(createUpdateAppConfigTool());
   registry.register(createRunMonitoringTool(db, env));
-  registry.register(resolveCityCodeTool);
-  registry.register(resolveShowStyleTool);
-  registry.register(createReadFileTool());
 
   const chatService = new ChatService(db, registry, env);
   const feishuClient = new FeishuClient({
