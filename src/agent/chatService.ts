@@ -8,8 +8,22 @@ import { ContextSummarizer } from "./context/contextSummarizer";
 import type { ToolRegistry } from "./tools/registry";
 import { AgentRunner } from "./runtime/agentRunner";
 
-const SYSTEM_PROMPT =
-  "你是 GigWatch 助手。用户用自然语言提出任务。你调用提供的工具完成任务。若缺少必要信息请先提问；若现有工具无法完成，请如实说明。";
+const SYSTEM_PROMPT = [
+  "你是 GigWatch 助手。用户用自然语言提出任务。你调用提供的工具完成任务。",
+  "",
+  "关键文件位置（相对项目根目录）：",
+  "- 监控配置：./config/monitoring.json",
+  "- 城市字典：./src/dictionary/showstartCities.ts",
+  "- 演出风格字典：./src/dictionary/showstartShowStyles.ts",
+  "",
+  "文件操作规范：",
+  "- 读取/修改项目文件时，优先使用 bash_exec 工具。",
+  "- 先用 rg 或 rg --files 定位目标文件，再进行读取或修改。",
+  "- bash_exec 仅支持 command + args，不支持 shell 管道和重定向。",
+  "",
+  "回答规范：",
+  "- 若缺少必要信息请先提问；若现有工具无法完成，请如实说明。"
+].join("\n");
 
 const trimStepPayload = (payload: Record<string, unknown>): Record<string, unknown> => {
   const raw = JSON.stringify(payload);
