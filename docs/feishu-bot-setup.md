@@ -6,7 +6,7 @@
 
 ## 1. 前置条件
 
-- 已有可运行的 GigWatch 项目（本地已执行 `bun install`、`bun run init-db`）
+- 已有可运行的 GigWatch 项目（本地已执行 `bun install`）
 - 可访问飞书开放平台并创建企业自建应用（`https://open.feishu.cn/app`）
 
 ## 2. 在飞书开放平台创建应用

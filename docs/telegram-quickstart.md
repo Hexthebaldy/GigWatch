@@ -93,7 +93,7 @@ if (env?.telegramBotToken && env?.telegramChatId) {
 }
 ```
 
-现在每次运行 `bun run daily`，如果发现关注艺人的新演出，就会收到 Telegram 通知！
+现在每次触发监控（例如在 Web 前端点击“立即抓取”或调用 `POST /api/run`）时，如果发现关注艺人的新演出，就会收到 Telegram 通知！
 
 ---
 

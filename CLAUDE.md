@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GigWatch is a Bun.js-based monitoring agent that scrapes ShowStart (秀动)演出列表、保存结果到 SQLite，并生成模型驱动的日报。支持 CLI 和 Web UI，关注艺人配置与搜索日志落盘。
+GigWatch is a Bun.js-based monitoring agent that scrapes ShowStart (秀动)演出列表、保存结果到 SQLite，并生成模型驱动的日报。当前仅保留 Web、Telegram、Feishu 三个入口。
 
 ## Commands
 
@@ -17,16 +17,16 @@ bun install
 bun run lint
 ```
 
-### Database
+### Entrypoints
 ```bash
-# Initialize SQLite database schema
-bun run init-db
-```
+# Web frontend
+bun run web
 
-### Running Reports
-```bash
-# Run daily monitoring and report generation
-bun run daily
+# Telegram bot long polling
+bun run telegram
+
+# Feishu bot long connection
+bun run feishu
 ```
 
 ## Architecture
@@ -61,11 +61,11 @@ bun run daily
 - Generate report via model (Kimi/OpenAI-compatible); fallback is empty summary（不再输出城市高频高亮）
 
 **Web UI** (`src/server.ts`)
-- Endpoints: `GET /api/report/latest`, `GET /api/logs`, `POST /api/run`, `GET /api/config`, `POST /api/config/query`, `POST /api/config/focus`
+- Endpoints: `GET /api/report/latest`, `GET /api/logs`, `POST /api/run`, `GET /api/config`, `POST /api/config/monitoring`
 - `GET /` serves a lightweight dashboard to触发抓取/查看日报/编辑监听；带每日 06:00 自动调度（服务器时区）
 
-**TUI** (`src/tui.ts`)
-- CLI 菜单：查看日报、查看日志、立即抓取、新增查询、设置关注艺人、查看当前查询
+**CLI Entrypoint** (`src/cli.ts`)
+- Unified command entry for `init-db`, `daily`, `serve`, `telegram`, `feishu`
 
 ### Timezone Handling
 - All timestamps use the configured timezone (default: Asia/Shanghai)

@@ -1,16 +1,15 @@
 import { loadConfig, loadEnv } from "./config";
 import { openDb } from "./db/client";
 import { initSchema } from "./db/schema";
-import { runDailyReport, runDailyReportWithAgent } from "./jobs/dailyReport";
+import { runDailyReportWithAgent } from "./jobs/dailyReport";
 import { startServer } from "./server";
-import { startTui } from "./tui";
 import { startTelegramLongPolling } from "./telegram/poller";
 import { startFeishuLongConnection } from "./feishu/poller";
 
 const main = async () => {
   const command = Bun.argv[2];
   if (!command) {
-    console.error("Usage: bun run src/cli.ts <init-db|daily|serve|tui|telegram|feishu>");
+    console.error("Usage: bun run src/cli.ts <init-db|daily|serve|telegram|feishu>");
     process.exit(1);
   }
 
@@ -25,7 +24,6 @@ const main = async () => {
 
   if (command === "daily") {
     const config = loadConfig();
-    // Use the new agent-based version
     const report = await runDailyReportWithAgent(db, config, env);
     console.log("\n=== GigWatch Daily Report (ShowStart - Agent Mode) ===");
     console.log(`Run at: ${report.runAt} (${report.timezone})`);
@@ -48,11 +46,6 @@ const main = async () => {
   if (command === "serve") {
     const config = loadConfig();
     startServer(db, config, env);
-    return;
-  }
-
-  if (command === "tui") {
-    await startTui();
     return;
   }
 
