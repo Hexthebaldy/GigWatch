@@ -100,6 +100,9 @@ bun run web
 | `FEISHU_APP_ID` | Feishu 模式需要 | - | 飞书鉴权 |
 | `FEISHU_APP_SECRET` | Feishu 模式需要 | - | 飞书鉴权 |
 | `FEISHU_BASE_URL` | 否 | `https://open.feishu.cn` | 飞书 API 地址 |
+| `WEB_SEARCH_KEY` | 否（使用 `web_search` 时建议配置） | - | 火山引擎融合信息搜索 API Key |
+| `WEB_SEARCH_URL` | 否 | `https://open.feedcoopapi.com/search_api/web_search` | 火山引擎融合信息搜索 API 地址 |
+| `WEB_SEARCH_TIMEOUT_MS` | 否 | `12000` | `web_search` 请求超时（毫秒） |
 
 说明：
 - 未配置 `OPENAI_API_KEY` 时，`AgentRunner` 会返回降级回复，不会进入 LLM tool calling。
@@ -181,7 +184,7 @@ bun run web
 Telegram / Feishu 入口默认注册：
 - `bash_exec`
 - `web_fetch`
-- `web_search`
+- `web_search`（火山引擎融合信息搜索 API）
 - `fetch_showstart_events`
 - `load_recent_events`
 - `search_events_db`
