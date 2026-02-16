@@ -3,7 +3,7 @@ import type { Database } from "bun:sqlite";
 import type { AppEnv } from "./config";
 import { getConfigPath } from "./config";
 import type { DailyReport, MonitoringConfig } from "./types";
-import { runDailyReportWithAgent } from "./jobs/dailyReport";
+import { runDailyReport } from "./jobs/dailyReport";
 import { nowInTz } from "./utils/datetime";
 import { showstartCities } from "./dictionary/showstartCities";
 import { showstartShowStyles } from "./dictionary/showstartShowStyles";
@@ -272,7 +272,7 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
     if (isRunning) return null;
     isRunning = true;
     try {
-      return await runDailyReportWithAgent(db, configRef.current, env);
+      return await runDailyReport(db, configRef.current, env);
     } finally {
       isRunning = false;
     }

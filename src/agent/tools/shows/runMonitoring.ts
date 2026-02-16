@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type { AppEnv } from "../../../config";
 import { loadConfig } from "../../../config";
-import { runDailyReportWithAgent } from "../../../jobs/dailyReport";
+import { runDailyReport } from "../../../jobs/dailyReport";
 import type { Tool } from "../base";
 
 export const createRunMonitoringTool = (db: Database, env: AppEnv): Tool => ({
@@ -14,7 +14,7 @@ export const createRunMonitoringTool = (db: Database, env: AppEnv): Tool => ({
   execute: async () => {
     try {
       const config = loadConfig();
-      const report = await runDailyReportWithAgent(db, config, env);
+      const report = await runDailyReport(db, config, env);
       return {
         success: true,
         data: {

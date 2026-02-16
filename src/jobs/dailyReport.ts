@@ -2,17 +2,10 @@ import type { Database } from "bun:sqlite";
 import type { AppEnv } from "../config";
 import type { DailyReport, MonitoringConfig, ShowStartEvent, MonitoringQuery } from "../types";
 import { fetchShowStartEvents } from "../clients/showstart";
-import { generateReportWithModel } from "../clients/openai";
 import { nowInTz, toIso } from "../utils/datetime";
 import { logError, logInfo, logWarn } from "../utils/logger";
-import { AgentExecutor } from "../agent/executor";
+import { AgentRunner } from "../agent/runtime/agentRunner";
 import { ToolRegistry } from "../agent/tools/registry";
-import { buildEventMonitoringTask } from "../agent/task";
-import { showstartTool } from "../agent/tools/shows/showstart";
-import { createDatabaseTool, createLoadEventsTool, createLogSearchTool } from "../agent/tools/shows/database";
-import { createTelegramTool } from "../agent/tools/shows/telegram";
-import { webFetchTool } from "../agent/tools/common/webFetch";
-import { webSearchTool } from "../agent/tools/common/webSearch";
 
 // 写入或更新单条演出记录，冲突时刷新 last_seen_at 及核心字段
 const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => {
@@ -185,18 +178,54 @@ const buildQueriesFromConfig = (config: MonitoringConfig): MonitoringQuery[] => 
   return base;
 };
 
-// 每日主流程：抓取、落库、记日志、生成日报（优先模型，缺省则返回空摘要）、保存日报
-export const runDailyReport = async (db: Database, config: MonitoringConfig, env?: AppEnv) => {
+const extractJson = (content: string) => {
+  const fenced = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenced?.[1]) return fenced[1];
+  return content.trim();
+};
+
+const tryParseDailyReport = (content: string): DailyReport | null => {
+  try {
+    const parsed = JSON.parse(extractJson(content)) as DailyReport;
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      typeof parsed.runAt !== "string" ||
+      typeof parsed.timezone !== "string" ||
+      typeof parsed.summary !== "string" ||
+      !Array.isArray(parsed.focusArtists) ||
+      !Array.isArray(parsed.events)
+    ) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+type MonitoringData = {
+  timezone: string;
+  reportWindowHours: number;
+  queries: MonitoringQuery[];
+  events: ShowStartEvent[];
+  focusMatchesForModel: Array<{ artist: string; events: ShowStartEvent[] }>;
+  focusArtists: string[];
+  totalEventsFetched: number;
+};
+
+const collectMonitoringData = async (db: Database, config: MonitoringConfig): Promise<MonitoringData> => {
   const timezone = config.app?.timezone || "Asia/Shanghai";
   const reportWindowHours = config.app?.reportWindowHours || 24;
   const fetchedAt = toIso(new Date());
-
   const queries = buildQueriesFromConfig(config);
+
   if (queries.length === 0) {
     logWarn("No monitoring queries configured; skipping scrape.");
   }
   logInfo(`Daily run start at ${fetchedAt}, queries=${queries.length}`);
 
+  let totalEventsFetched = 0;
   for (const query of queries) {
     try {
       logInfo(`Fetching query "${query.name}" ...`);
@@ -212,10 +241,10 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
       const sample = events.slice(0, 3).map((e) => e.title || "无标题").join(" | ");
       logInfo(`Query "${query.name}" fetched ${events.length} events, sample=[${sample}], url=${url}`);
 
-
       for (const event of events) {
         upsertEvent(db, event, fetchedAt);
       }
+      totalEventsFetched += events.length;
       logInfo(`Query "${query.name}" success, events=${events.length}, url=${url}`);
       logSearch(db, { name: query.name, url, cityCode: query.cityCode, keyword: query.keyword }, fetchedAt, events.length);
     } catch (error) {
@@ -227,94 +256,104 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
   const since = new Date(Date.now() - reportWindowHours * 60 * 60 * 1000).toISOString();
   const events = loadRecentEvents(db, since);
   logInfo(`Loaded ${events.length} recent events since ${since}`);
-  const focusList = config.monitoring.focusArtists || [];
-  //过滤出关注艺人的演出
-  const focusMatchesForModel = focusList.map((artist) => ({
+  const focusArtists = config.monitoring.focusArtists || [];
+  const focusMatchesForModel = focusArtists.map((artist) => ({
     artist,
     events: events.filter(
       (evt) => evt.title?.toLowerCase().includes(artist.toLowerCase()) || evt.performers?.toLowerCase().includes(artist.toLowerCase())
     )
   }));
-  logInfo(`Built focus matches for ${focusList.length} artists`);
+  logInfo(`Built focus matches for ${focusArtists.length} artists`);
 
-  const report = await generateReportWithModel({
+  return {
     timezone,
-    runAt: nowInTz(timezone),
+    reportWindowHours,
+    queries,
     events,
-    focusArtists: focusMatchesForModel,
-    env: env || { timezone, dbPath: "", serverPort: 0 },
-    fallback: () => ({
-      runAt: nowInTz(timezone),
-      timezone,
-      summary: `未调用模型，本地仅列出关注艺人匹配。共 ${events.length} 条演出。`,
-      focusArtists: buildFocusEvents(events, focusList),
-      events
-    })
-  });
-
-  storeReport(db, report);
-  logInfo(`Report stored at ${report.runAt}, events=${report.events.length}`);
-  return report;
+    focusMatchesForModel,
+    focusArtists,
+    totalEventsFetched
+  };
 };
 
-// Agent-based version of runDailyReport (Phase 2: LLM-driven)
-export const runDailyReportWithAgent = async (db: Database, config: MonitoringConfig, env?: AppEnv) => {
-  const timezone = config.app?.timezone || "Asia/Shanghai";
-  const reportWindowHours = config.app?.reportWindowHours || 24;
+const generateReportWithAgentRunner = async (input: {
+  timezone: string;
+  runAt: string;
+  events: ShowStartEvent[];
+  focusArtists: Array<{ artist: string; events: ShowStartEvent[] }>;
+  queries: MonitoringQuery[];
+  reportWindowHours: number;
+  totalEventsFetched: number;
+  env: AppEnv;
+  fallback: () => DailyReport;
+}): Promise<DailyReport> => {
+  if (!input.env.openaiApiKey) return input.fallback();
 
-  // Build queries from config
-  const queries = buildQueriesFromConfig(config);
+  const runner = new AgentRunner(new ToolRegistry(), input.env);
+  const initialMessages = [
+    {
+      role: "system" as const,
+      content:
+        "根据信息总结演出日报。输出请严格符合 DailyReport 结构的 JSON，不要包含多余字段。字段仅包含 runAt, timezone, summary, focusArtists, events。Chinese output."
+    },
+    {
+      role: "user" as const,
+      content: `请根据已抓取的数据生成日报。
+runAt: ${input.runAt}
+timezone: ${input.timezone}
+reportWindowHours: ${input.reportWindowHours}
+queriesExecuted: ${input.queries.length}
+totalEventsFetched: ${input.totalEventsFetched}
+recentEventsCount: ${input.events.length}
 
-  // Initialize tool registry
-  const registry = new ToolRegistry();
-  registry.register(showstartTool);
-  registry.register(webFetchTool);
-  registry.register(webSearchTool);
-  registry.register(createDatabaseTool(db));
-  registry.register(createLoadEventsTool(db));
-  registry.register(createLogSearchTool(db));
+要求：
+1) 保留 events 原始数组。
+2) focusArtists 中每个艺人的 events 仅保留 title/url/city/site/showTime/price 字段。
+3) summary 用 3-5 句中文，覆盖总量、关注艺人命中、值得关注的演出。
 
-  // Register Telegram tool if configured
-  if (env?.telegramBotToken && env?.telegramChatId) {
-    registry.register(createTelegramTool({
-      botToken: env.telegramBotToken,
-      chatId: env.telegramChatId
-    }));
-    logInfo("[Agent] Telegram tool registered");
-  } else {
-    logWarn("[Agent] Telegram not configured, notifications disabled");
-  }
+Events: ${JSON.stringify(input.events)}
+FocusArtists: ${JSON.stringify(
+        input.focusArtists.map((f) => ({
+          artist: f.artist,
+          events: f.events.map((e) => ({
+            title: e.title,
+            url: e.url,
+            city: e.cityName,
+            site: e.siteName,
+            showTime: e.showTime,
+            price: e.price
+          }))
+        }))
+      )}`
+    }
+  ];
 
-  // Create executor with env for LLM-driven execution
-  const executor = new AgentExecutor(db, registry, env);
+  const runtimeResult = await runner.runTurn(initialMessages);
+  const parsed = tryParseDailyReport(runtimeResult.reply);
+  if (parsed) return parsed;
 
-  // Build task
-  const task = buildEventMonitoringTask(config, queries);
+  logWarn("[DailyReport] AgentRunner returned non-JSON/invalid JSON report, fallback to template report.");
+  return input.fallback();
+};
 
-  // Execute task (will use LLM if available)
-  const result = await executor.execute(task);
-
-  if (!result.success) {
-    logError(`Agent task failed: ${result.error}`);
-    throw new Error(result.error || "Unknown agent error");
-  }
-
-  logInfo(`Agent task completed: ${result.summary}`);
-
-  // Generate report using model (keeping existing logic)
-  const { events, focusMatches } = result.data;
-  const report = await generateReportWithModel({
-    timezone,
-    runAt: nowInTz(timezone),
-    events,
-    focusArtists: focusMatches,
-    env: env || { timezone, dbPath: "", serverPort: 0 },
+// 每日主流程：抓取、落库、记日志，最后使用 AgentRunner 生成日报并保存
+export const runDailyReport = async (db: Database, config: MonitoringConfig, env?: AppEnv) => {
+  const data = await collectMonitoringData(db, config);
+  const report = await generateReportWithAgentRunner({
+    timezone: data.timezone,
+    runAt: nowInTz(data.timezone),
+    events: data.events,
+    focusArtists: data.focusMatchesForModel,
+    queries: data.queries,
+    reportWindowHours: data.reportWindowHours,
+    totalEventsFetched: data.totalEventsFetched,
+    env: env || { timezone: data.timezone, dbPath: "", serverPort: 0 },
     fallback: () => ({
-      runAt: nowInTz(timezone),
-      timezone,
-      summary: `Agent 执行完成。共抓取 ${result.data.totalEventsFetched} 条演出，最近 ${reportWindowHours} 小时内有 ${events.length} 条新演出。`,
-      focusArtists: buildFocusEvents(events, config.monitoring.focusArtists || []),
-      events
+      runAt: nowInTz(data.timezone),
+      timezone: data.timezone,
+      summary: `Agent 摘要生成已回退。共抓取 ${data.totalEventsFetched} 条演出，最近 ${data.reportWindowHours} 小时内有 ${data.events.length} 条新演出。`,
+      focusArtists: buildFocusEvents(data.events, data.focusArtists),
+      events: data.events
     })
   });
 

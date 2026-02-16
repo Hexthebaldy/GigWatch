@@ -1,7 +1,7 @@
 import { loadConfig, loadEnv } from "./config";
 import { openDb } from "./db/client";
 import { initSchema } from "./db/schema";
-import { runDailyReportWithAgent } from "./jobs/dailyReport";
+import { runDailyReport } from "./jobs/dailyReport";
 import { startServer } from "./server";
 import { startTelegramLongPolling } from "./telegram/poller";
 import { startFeishuLongConnection } from "./feishu/poller";
@@ -24,7 +24,7 @@ const main = async () => {
 
   if (command === "daily") {
     const config = loadConfig();
-    const report = await runDailyReportWithAgent(db, config, env);
+    const report = await runDailyReport(db, config, env);
     console.log("\n=== GigWatch Daily Report (ShowStart - Agent Mode) ===");
     console.log(`Run at: ${report.runAt} (${report.timezone})`);
     console.log("\nSummary:\n", report.summary);

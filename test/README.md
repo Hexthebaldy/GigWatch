@@ -16,11 +16,10 @@
 bun run test/tools.test.ts
 ```
 
-**`agent.test.ts`** - Agent 执行器测试
-- AgentExecutor 基本功能
-- 任务类型处理
-- 错误处理
-- 结果结构验证
+**`agent.test.ts`** - AgentRunner 测试
+- 未配置 OPENAI_API_KEY 的回退行为
+- 返回结构验证（reply/messages/steps）
+- system_error 步骤验证
 
 运行：
 ```bash
@@ -163,7 +162,7 @@ jobs:
 ## 测试覆盖率目标
 
 - ✅ 核心工具系统：100%
-- ✅ Agent 执行器：基本流程覆盖
+- ✅ AgentRunner：基本流程覆盖
 - 🚧 网络请求：集成测试覆盖
 - 🚧 LLM 调用：mock 测试（阶段 2）
 
