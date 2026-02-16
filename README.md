@@ -1,319 +1,259 @@
 # GigWatch
 
-🎵 **智能演出监控助手** - 自动追踪你关注的艺人和演出，第一时间 Telegram 通知你
+GigWatch 是一个基于 Bun + TypeScript 的演出监控系统：抓取 ShowStart（秀动）演出列表，落库到 SQLite，并通过 LLM Tool Calling 生成日报与对话式任务执行结果。
 
-<div align="center">
+当前代码的核心思路是：
+- 程序化抓取与数据整理放在 `src/jobs/dailyReport.ts`
+- 大模型只负责总结与工具调用（`AgentRunner`）
+- 运行入口拆分为 Web / Telegram / Feishu
 
-[![Bun](https://img.shields.io/badge/Bun-1.0+-black?logo=bun)](https://bun.sh)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite)](https://www.sqlite.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+## 功能概览
 
-</div>
+- 按监控规则（艺人、城市、风格、关键词）自动展开查询
+- 抓取 ShowStart 列表并解析 `window.__NUXT__`
+- 演出数据去重入库（按 `event_id` upsert）
+- 记录每次查询日志
+- 生成并存储日报（`reports`）
+- Telegram / Feishu 对话入口接入 AgentRunner + 工具集
 
----
+## 技术栈
 
-## ✨ 特性
+- Runtime: Bun
+- Language: TypeScript (ESM)
+- Database: SQLite（`bun:sqlite`）
+- LLM SDK: `openai`（兼容 OpenAI API）
+- Feishu SDK: `@larksuiteoapi/node-sdk`
 
-- 🤖 **AI Agent 驱动** - LLM 自主决策，智能分析演出信息
-- 🔔 **Telegram 通知** - 关注艺人有新演出？立即通知你
-- 📨 **飞书 Bot 对话** - 在飞书里直接和 GigWatch 对话，消息自动落库
-- 🎯 **多维度监控** - 艺人、城市、流派、关键词，全方位覆盖
-- 📊 **每日报告** - AI 生成精准摘要，不错过任何重要信息
-- 🌐 **三入口** - Web 前端、Telegram Bot、飞书 Bot
-- 💾 **本地存储** - SQLite 数据库，所有数据本地可控
+## 快速开始
 
----
-
-## 🚀 快速开始
-
-### 1. 安装
+### 1. 安装依赖
 
 ```bash
-# 克隆项目
-git clone https://github.com/Hexthebaldy/GigWatch.git
-cd GigWatch
-
-# 安装依赖
 bun install
-
-# 启动 Web 前端（会自动初始化数据库）
-bun run web
 ```
 
-### 2. 配置
-
-#### 创建监控配置
+### 2. 准备配置
 
 ```bash
 cp config/monitoring.example.json config/monitoring.json
+cp .env.example .env
 ```
 
-编辑 `config/monitoring.json`，添加你关注的艺人和城市：
+编辑 `config/monitoring.json`：
 
 ```json
 {
+  "app": {
+    "timezone": "Asia/Shanghai",
+    "reportWindowHours": 24
+  },
   "monitoring": {
     "focusArtists": ["青叶市子", "Central Cee"],
-    "cityCodes": ["21", "10"],  // 21=上海, 10=北京（见 src/dictionary/showstartCities.ts）
-    "showStyles": ["2", "3"],   // 2=摇滚, 3=流行（见 src/dictionary/showstartShowStyles.ts）
-    "keywords": ["新年"]
+    "cityCodes": ["21", "10"],
+    "showStyles": ["2", "3"],
+    "keywords": ["音乐节"]
   }
 }
 ```
 
-> 💡 城市/风格代码内置在本仓库的 `src/dictionary/` 中，Web UI 可直接勾选无需手填。
-> 📁 `src/dictionary/` 存放公共字典；`data/` 仅用于本地数据库文件。
-
-#### 配置环境变量（可选）
-
-创建 `.env` 文件：
+### 3. 启动 Web
 
 ```bash
-# LLM 配置（AI Agent 功能必需）
-OPENAI_API_KEY=sk-xxx
-OPENAI_BASE_URL=https://api.moonshot.cn/v1
-OPENAI_MODEL=kimi-k2-turbo-preview
-
-# Telegram 通知（推荐配置）
-TELEGRAM_BOT_TOKEN=123456789:ABCdef...
-TELEGRAM_CHAT_ID=123456789
-
-# Feishu Bot（可选）
-FEISHU_APP_ID=cli_xxx
-FEISHU_APP_SECRET=xxx
-FEISHU_BASE_URL=https://open.feishu.cn
-
-# 可选配置
-APP_TIMEZONE=Asia/Shanghai      # 默认时区，影响每日 06:00 定时任务
-DB_PATH=./data/gigwatch.sqlite  # 数据库路径
-APP_PORT=3000                   # Web UI 端口
-CONFIG_PATH=./config/monitoring.json  # 自定义配置文件路径（可选）
-```
-
-> 📖 详细配置说明：[Telegram 配置指南](./docs/telegram-integration.md)
-> 📨 飞书接入说明：[飞书 Bot 注册与接入指南](./docs/feishu-bot-setup.md)
-> ⚠️ 飞书后台改完机器人/事件配置后，务必发布新版本；未发布时客户端可能看不到输入框。
-
-### 3. 运行
-
-```bash
-# 启动 Web 前端入口
 bun run web
 ```
 
-**第一次运行，你会看到：**
-- 🌐 Web 前端已启动，可直接编辑监控配置
-- ▶️ 点击“立即抓取”后触发一次完整监控
-- 🤖 AI Agent 分析结果并生成报告
-- 📱 如果有关注艺人演出 → Telegram 通知
+访问 `http://localhost:3000`。
 
----
+## 命令入口
 
-## 📱 使用方式
+所有命令统一由 `src/cli.ts` 分发。
 
-### Web 前端入口
+| 命令 | 脚本 | 说明 |
+|---|---|---|
+| `init-db` | `bun run init-db` | 仅初始化数据库表结构 |
+| `daily` | `bun run daily` | 立即执行一次日报流程 |
+| `serve` | `bun run serve` | 启动 Web 页面 + API + 内置定时器 |
+| `telegram` | `bun run telegram` | 启动 Telegram 长轮询机器人 |
+| `feishu` | `bun run feishu` | 启动 Feishu 长连接机器人 |
+
+开发时可用：
+- `bun run serve:watch`
+- `bun run web:watch`
+
+## 环境变量
+
+由 `src/config.ts` 的 `loadEnv()` 读取。
+
+| 变量 | 必需 | 默认值 | 用途 |
+|---|---|---|---|
+| `OPENAI_API_KEY` | 否 | - | 日报总结 / 对话 Agent |
+| `OPENAI_BASE_URL` | 否 | - | OpenAI 兼容接口地址 |
+| `OPENAI_MODEL` | 否 | - | 模型名 |
+| `OPENAI_TEMPERATURE` | 否 | - | 温度参数覆盖 |
+| `APP_TIMEZONE` | 否 | `Asia/Shanghai` | 报告时区与定时器 |
+| `DB_PATH` | 否 | `./data/gigwatch.sqlite` | SQLite 文件路径 |
+| `APP_PORT` | 否 | `3000` | Web 端口 |
+| `CONFIG_PATH` | 否 | `config/monitoring.json` | 监控配置路径 |
+| `LOG_PATH` | 否 | `./data/gigwatch.log.jsonl` | JSONL 日志路径 |
+| `TELEGRAM_BOT_TOKEN` | Telegram 模式需要 | - | Telegram 收发消息 |
+| `TELEGRAM_CHAT_ID` | 否 | - | 限制允许的聊天会话 / 指定回消息目标 |
+| `FEISHU_APP_ID` | Feishu 模式需要 | - | 飞书鉴权 |
+| `FEISHU_APP_SECRET` | Feishu 模式需要 | - | 飞书鉴权 |
+| `FEISHU_BASE_URL` | 否 | `https://open.feishu.cn` | 飞书 API 地址 |
+
+说明：
+- 未配置 `OPENAI_API_KEY` 时，`AgentRunner` 会返回降级回复，不会进入 LLM tool calling。
+- 日报流程中，如果 LLM 输出不是合法 `DailyReport` JSON，会自动回退模板摘要。
+
+## 监控规则如何展开
+
+`src/jobs/dailyReport.ts` 中的规则展开逻辑：
+
+- `focusArtists`：每个艺人生成一个 `keyword` 查询
+- `cityCodes + showStyles`：两者都存在时做笛卡尔积
+- 仅有城市或仅有风格时：按单字段分别查询
+- `keywords`：每个关键词生成一个查询
+
+相关字典：
+- `src/dictionary/showstartCities.ts`
+- `src/dictionary/showstartShowStyles.ts`
+
+## 日报主流程
+
+`runDailyReport(db, config, env)`（`src/jobs/dailyReport.ts`）执行步骤：
+
+1. 从监控配置生成查询列表
+2. 逐条抓取 ShowStart 数据
+3. upsert 到 `events`
+4. 写入 `search_logs`
+5. 按窗口读取近期演出
+6. 调用 `AgentRunner` 生成 `DailyReport` JSON
+7. 若解析失败，回退到模板摘要
+8. 存档到 `reports`
+
+## Web 服务与 API
+
+`src/server.ts` 同时提供页面与 API。
+
+### 内置定时器
+
+`serve/web` 运行后，每分钟检查一次，到本地时区 `06:00` 当天只触发一次自动抓取。
+
+### API 列表
+
+- `GET /api/report/latest`：读取最新日报
+- `GET /api/logs`：读取最近查询日志
+- `POST /api/run`：立即执行一次流程
+- `GET /api/config`：读取当前内存配置
+- `POST /api/config/monitoring`：更新监控配置并写回配置文件
+
+## Telegram / Feishu 对话入口
+
+### Telegram（`src/telegram/poller.ts`）
+
+- 基于 `getUpdates` 长轮询
+- 文本消息转换为 `ChatService` 入站结构
+- `AgentRunner` 执行工具调用
+- 最终回复通过 `sendMessage` 返回
+
+### Feishu（`src/feishu/poller.ts`）
+
+- 基于飞书 SDK WebSocket 长连接
+- 进程内事件去重（避免重复回复）
+- 文本消息转换为 `ChatService` 入站结构
+- 通过飞书消息接口回发结果
+
+## Agent Runtime 与上下文管理
+
+核心文件：
+- `src/agent/runtime/agentRunner.ts`
+- `src/agent/chatService.ts`
+- `src/agent/context/*`
+
+当前行为：
+- `AgentRunner` 是核心 tool-calling loop（`MAX_ITERATIONS = 50`）
+- 工具 schema 来自 `ToolRegistry`
+- 对话、运行轨迹会持久化到数据库
+- `ContextManager` 会做历史压缩（摘要写入 `chat_context_summaries`）以控制上下文 token
+
+## 当前注册的工具集（对话入口）
+
+Telegram / Feishu 入口默认注册：
+- `bash_exec`
+- `web_fetch`
+- `web_search`
+- `fetch_showstart_events`
+- `load_recent_events`
+- `search_events_db`
+- `get_latest_report`
+- `run_monitoring_now`
+
+工具定义目录：
+- `src/agent/tools/common/*`
+- `src/agent/tools/shows/*`
+
+## 数据库结构
+
+由 `src/db/schema.ts` 初始化。
+
+主要表：
+- `events`：演出规范化数据 + 原始 JSON + 首次/最近发现时间
+- `search_logs`：每次查询的参数与结果数量
+- `reports`：完整日报 JSON
+- `chat_messages`：聊天消息
+- `chat_context_summaries`：上下文摘要
+- `agent_runs`：每次 Agent 运行状态
+- `agent_run_steps`：每次运行的步骤轨迹
+
+当前没有迁移框架，结构变更需手工处理。
+
+## 测试
 
 ```bash
-# 启动 Web 服务器（自动建表）
-bun run web
-
-# 浏览器访问 http://localhost:3000
-```
-
-**功能：**
-- 📊 查看最新报告
-- 🔍 查看搜索日志
-- ⚙️ 编辑监控配置（城市/演出风格支持勾选多选，使用内置字典）
-- ▶️ 手动触发抓取
-- ⏰ 自动定时任务（每天 06:00）
-
-### Telegram 入口
-
-```bash
-# 启动 Telegram 长轮询
-bun run telegram
-```
-
-**功能：**
-- 🤖 在 Telegram 中直接与 Agent 对话
-- 🔧 可调用工具执行查询、读取报告、运行监控
-
-### 飞书入口
-
-```bash
-# 启动飞书长连接
-bun run feishu
-```
-
-**功能：**
-- 🤖 在飞书中直接与 Agent 对话
-- 💬 文本消息自动入库并由 Agent 回复
-
----
-
-## 🧠 AI Agent 工作流程
-
-GigWatch 使用 **LLM-driven Agent** 智能监控演出：
-
-```
-1. 执行查询
-   ↓
-2. 抓取演出信息
-   ↓
-3. 保存到数据库
-   ↓
-4. AI 分析结果
-   ↓
-5. 智能决策：是否通知？
-   ├─ 关注艺人有演出 → 🚨 紧急通知（带声音）
-   ├─ 新演出匹配监控 → 📊 普通通知（静音）
-   └─ 无相关演出 → 🔕 不通知
-   ↓
-6. 生成每日报告
-```
-
-**示例通知：**
-
-```
-🚨 紧急通知：关注艺人 Central Cee 有新演出！
-
-🎤 Central Cee - WORLD TOUR
-
-📍 上海站（加场）
-• 时间：2026年3月7日 19:00
-• 地点：纪希秀场
-• 票价：¥480起
-• 购票：https://www.showstart.com/event/289271
-
-⚡️ 建议尽快购票！
-```
-
----
-
-## 🔧 定时执行
-
-### 使用 cron（可选）
-
-```bash
-# 编辑 crontab
-crontab -e
-
-# 通过 Web API 触发抓取（每天 9:00）
-0 9 * * * curl -s -X POST http://localhost:3000/api/run > /dev/null
-```
-
-### 使用 Web UI 自动调度
-
-启动 Web 服务器后，会自动在每天 **06:00**（服务器时区）执行监控任务。
-
----
-
-## 📚 文档
-
-### 快速上手
-- [Telegram 5 分钟配置](./docs/telegram-quickstart.md) - 快速接入 Telegram 通知
-- [飞书 Bot 注册与接入指南](./docs/feishu-bot-setup.md) - 从创建应用到长连接联调
-- [测试指南](./docs/testing-guide.md) - 运行测试确保一切正常
-
-### 深入了解
-- [Phase 2: LLM-driven Agent](./docs/phase2-llm-agent.md) - AI Agent 架构详解
-- [Telegram 集成完整指南](./docs/telegram-integration.md) - 详细配置说明
-- [Agent 架构规划](./docs/agent-architecture-plan.md) - 技术架构文档
-
-### 开发者
-- [Phase 1 完成报告](./docs/phase1-completion.md) - 工具系统架构
-- [Phase 2 完成总结](./docs/phase2-completion-summary.md) - LLM Agent 实现细节
-
----
-
-## 🧪 测试
-
-```bash
-# 运行所有单元测试
+# 核心检查
+bun run lint
 bun run test
 
-# 测试 LLM Agent（需要配置 LLM）
-bun run test:llm
-
-# 测试 Telegram 通知（需要配置 Telegram）
+# 可选网络/集成测试
 bun run test:telegram
+bun run test:llm
+bun run test:all
 ```
 
-详见：[测试指南](./docs/testing-guide.md)
+测试文件位于 `test/`。
 
----
+## 目录结构
 
-## 💡 常见问题
+```text
+src/
+  agent/         # runner, chat service, context, tool system
+  clients/       # showstart/openai/feishu clients
+  jobs/          # 程序化任务（日报）
+  db/            # sqlite client + schema
+  telegram/      # telegram poller
+  feishu/        # feishu long connection poller
+  dictionary/    # 城市/风格/模型上下文窗口字典
+  utils/         # datetime/logger
+  cli.ts         # 命令入口
+  server.ts      # web server + dashboard
+config/
+  monitoring.example.json
 
-### Q: 收不到 Telegram 通知？
+test/
+  *.test.ts
+```
 
-**检查：**
-1. `.env` 中是否配置了 `TELEGRAM_BOT_TOKEN` 和 `TELEGRAM_CHAT_ID`
-2. 是否给 bot 发送过至少一条消息
-3. 运行测试：`bun run test:telegram`
+## 运行建议
 
-详见：[Telegram 配置指南](./docs/telegram-integration.md)
+- `serve`、`telegram`、`feishu` 是独立常驻进程，按需分别启动。
+- 若依赖内置 06:00 自动任务，避免多个 `serve` 进程同时写同一套 DB/配置。
+- 日志默认 JSONL 追加写入（`LOG_PATH`）。
 
-### Q: AI Agent 未启用？
+## 相关文档
 
-**检查：**
-1. `.env` 中是否配置了 `OPENAI_API_KEY`
-2. 查看日志：应该看到 `[Agent] Using LLM-driven execution`
-3. 如果看到 `LLM not available, using rule-based execution` → 检查 API key
+- `docs/feishu-bot-setup.md`
+- `docs/telegram-integration.md`
+- `docs/telegram-quickstart.md`
+- `docs/testing-guide.md`
 
-### Q: 如何添加新的监控维度？
-
-**方式 1：Web UI**
-- 访问 http://localhost:3000
-- 点击"编辑配置"
-- 添加艺人/城市/关键词
-
-**方式 2：手动编辑**
-- 编辑 `config/monitoring.json`
-- 重启入口进程（`bun run web` / `bun run telegram` / `bun run feishu`）
-
-### Q: 成本多少？
-
-**LLM 调用（Kimi K2 Turbo）：**
-- 单次监控：约 ¥0.16
-- 每日 1 次：约 ¥4.8/月
-- 每年：约 ¥58
-
-**ShowStart API：** 免费
-
-**总计：** 每月不到 ¥5
-
----
-
-## 🛣️ Roadmap
-
-### Phase 3（进行中）
-
-**核心优化：**
-- [ ] **上下文管理策略** - Token 计数、智能压缩、滑动窗口，防止超过 128K 限制
-- [ ] **Web Search Tool** - Agent 可搜索艺人最新动态、巡演消息、社交媒体
-- [ ] **爬虫防御性兜底** - Nuxt 解析失败时自动切换到 LLM 清洗 HTML 模式
-
-
----
-
-## 📄 许可
-
-MIT License
-
----
-
-## 🙏 致谢
-
-- [ShowStart](https://www.showstart.com) - 演出数据来源，你比大麦牛逼多了👍
-- [Kimi](https://kimi.moonshot.cn) - 性价比之壁
-- [Bun](https://bun.sh) - 你是最棒的JavaScript 运行时
-
----
-
-<div align="center">
-
-**⭐️ 如果这个项目帮到了你，请给个 Star！**
-
-</div>
+说明：部分历史文档可能落后于当前重构，`src/` 代码始终是最终事实来源。
