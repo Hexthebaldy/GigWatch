@@ -9,7 +9,7 @@ import { startFeishuLongConnection } from "./feishu/poller";
 const main = async () => {
   const command = Bun.argv[2];
   if (!command) {
-    console.error("Usage: bun run src/cli.ts <init-db|daily|serve|telegram|feishu>");
+    console.error("Usage: bun run apps/server/src/cli.ts <init-db|daily|serve|telegram|feishu>");
     process.exit(1);
   }
 

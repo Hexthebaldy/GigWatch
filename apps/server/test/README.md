@@ -13,7 +13,7 @@
 
 运行：
 ```bash
-bun run test/tools.test.ts
+bun run test:tools
 ```
 
 **`agent.test.ts`** - AgentRunner 测试
@@ -23,7 +23,7 @@ bun run test/tools.test.ts
 
 运行：
 ```bash
-bun run test/agent.test.ts
+bun run test:agent
 ```
 
 **`telegram.test.ts`** - Telegram 通知测试
@@ -38,7 +38,7 @@ bun run test/agent.test.ts
 export TELEGRAM_BOT_TOKEN="你的token"
 export TELEGRAM_CHAT_ID="你的chat_id"
 
-bun run test/telegram.test.ts
+bun run test:telegram
 ```
 
 **`llm-agent.test.ts`** - LLM-driven Agent 集成测试
@@ -62,7 +62,7 @@ bun run test:llm
 ### 运行所有单元测试（不含网络请求）
 
 ```bash
-bun run test/tools.test.ts && bun run test/agent.test.ts
+bun run test:tools && bun run test:agent
 ```
 
 ### 运行包含网络请求的测试
@@ -153,8 +153,8 @@ jobs:
       - uses: actions/checkout@v3
       - uses: oven-sh/setup-bun@v1
       - run: bun install
-      - run: bun run test/tools.test.ts
-      - run: bun run test/agent.test.ts
+      - run: bun run test:tools
+      - run: bun run test:agent
 ```
 
 ---

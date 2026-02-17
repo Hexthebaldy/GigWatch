@@ -1,0 +1,152 @@
+:root {
+  --bg: #f2efe8;
+  --ink: #10100f;
+  --muted: #575550;
+  --panel: #fffdf8;
+  --line: #d5d0c3;
+  --brand: #00343f;
+  --brand-soft: #0d6070;
+  --error: #8d1d1d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 10% 10%, #e8f2df 0, rgba(232, 242, 223, 0) 45%),
+    radial-gradient(circle at 90% 15%, #d2ebe6 0, rgba(210, 235, 230, 0) 40%),
+    var(--bg);
+  font-family: "Avenir Next", "Helvetica Neue", "PingFang SC", "Noto Sans SC", sans-serif;
+}
+
+.layout {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 28px 16px 40px;
+  display: grid;
+  gap: 16px;
+}
+
+.hero {
+  background: linear-gradient(135deg, #f9f6ee 10%, #f1f8f8 100%);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.hero h1 {
+  margin: 4px 0 8px;
+  font-size: clamp(24px, 4vw, 36px);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--brand-soft);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.panel h2 {
+  margin-top: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.status {
+  margin: 8px 0 0;
+  font-weight: 600;
+}
+
+.error {
+  margin: 8px 0 0;
+  color: var(--error);
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+textarea {
+  width: 100%;
+  min-height: 70px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 14px;
+  resize: vertical;
+  background: #fff;
+}
+
+.action {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, var(--brand), var(--brand-soft));
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.report p {
+  margin: 8px 0;
+}
+
+.logs {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.logs li {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto auto auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.logs code {
+  background: #ecf2f1;
+  border-radius: 999px;
+  padding: 2px 8px;
+  width: fit-content;
+}
+
+@media (max-width: 768px) {
+  .logs li {
+    grid-template-columns: 1fr;
+  }
+}

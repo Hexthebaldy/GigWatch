@@ -3,5 +3,6 @@ config/monitoring.json
 data/
 logs/
 node_modules/
+apps/web/dist/
 bun.lockb
 .DS_Store

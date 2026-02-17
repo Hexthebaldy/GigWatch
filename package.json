@@ -3,28 +3,31 @@
   "version": "0.1.0",
   "type": "module",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "init-db": "bun run src/cli.ts init-db",
-    "daily": "bun run src/cli.ts daily",
-    "serve": "bun run src/cli.ts serve",
-    "serve:watch": "bun --watch run src/cli.ts serve",
-    "web": "bun run src/cli.ts serve",
-    "web:watch": "bun --watch run src/cli.ts serve",
-    "telegram": "bun run src/cli.ts telegram",
-    "feishu": "bun run src/cli.ts feishu",
-    "lint": "bun --check src/config.ts src/db/schema.ts src/db/client.ts src/clients/showstart.ts src/jobs/dailyReport.ts src/server.ts src/cli.ts src/telegram/poller.ts src/feishu/poller.ts src/utils/datetime.ts src/utils/logger.ts src/agent/tools/base.ts src/agent/tools/registry.ts src/agent/tools/shows/config.ts src/agent/tools/shows/database.ts src/agent/tools/shows/dictionary.ts src/agent/tools/shows/readFile.ts src/agent/tools/shows/report.ts src/agent/tools/shows/runMonitoring.ts src/agent/tools/shows/search.ts src/agent/tools/shows/showstart.ts src/agent/tools/shows/telegram.ts src/agent/runtime/agentRunner.ts",
-    "test": "bun run test/tools.test.ts && bun run test/agent.test.ts",
-    "test:tools": "bun run test/tools.test.ts",
-    "test:agent": "bun run test/agent.test.ts",
-    "test:telegram": "bun run test/telegram.test.ts",
-    "test:llm": "bun run test/llm-agent.test.ts",
-    "test:all": "bun run test && bun run test:telegram"
-  },
-  "dependencies": {
-    "@larksuiteoapi/node-sdk": "^1.54.0",
-    "openai": "^4.56.0"
-  },
-  "devDependencies": {
-    "bun-types": "^1.0.0"
+    "init-db": "bun run apps/server/src/cli.ts init-db",
+    "daily": "bun run apps/server/src/cli.ts daily",
+    "serve": "bun run apps/server/src/cli.ts serve",
+    "serve:watch": "bun --watch run apps/server/src/cli.ts serve",
+    "web": "bun run apps/server/src/cli.ts serve",
+    "web:watch": "bun --watch run apps/server/src/cli.ts serve",
+    "telegram": "bun run apps/server/src/cli.ts telegram",
+    "feishu": "bun run apps/server/src/cli.ts feishu",
+    "dev:web": "bun run --cwd apps/web dev",
+    "build:web": "bun run --cwd apps/web build",
+    "preview:web": "bun run --cwd apps/web preview",
+    "typecheck:web": "bun run --cwd apps/web typecheck",
+    "lint": "bun run lint:server",
+    "lint:server": "bun --check apps/server/src/config.ts apps/server/src/db/schema.ts apps/server/src/db/client.ts apps/server/src/clients/showstart.ts apps/server/src/jobs/dailyReport.ts apps/server/src/server.ts apps/server/src/cli.ts apps/server/src/telegram/poller.ts apps/server/src/feishu/poller.ts apps/server/src/utils/datetime.ts apps/server/src/utils/logger.ts apps/server/src/agent/tools/base.ts apps/server/src/agent/tools/registry.ts apps/server/src/agent/tools/shows/config.ts apps/server/src/agent/tools/shows/database.ts apps/server/src/agent/tools/shows/dictionary.ts apps/server/src/agent/tools/shows/readFile.ts apps/server/src/agent/tools/shows/report.ts apps/server/src/agent/tools/shows/runMonitoring.ts apps/server/src/agent/tools/shows/search.ts apps/server/src/agent/tools/shows/showstart.ts apps/server/src/agent/tools/shows/telegram.ts apps/server/src/agent/runtime/agentRunner.ts",
+    "test": "bun run test:server",
+    "test:server": "bun run apps/server/test/tools.test.ts && bun run apps/server/test/agent.test.ts",
+    "test:tools": "bun run apps/server/test/tools.test.ts",
+    "test:agent": "bun run apps/server/test/agent.test.ts",
+    "test:telegram": "bun run apps/server/test/telegram.test.ts",
+    "test:llm": "bun run apps/server/test/llm-agent.test.ts",
+    "test:all": "bun run test:server && bun run test:telegram"
   }
 }

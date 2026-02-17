@@ -1,0 +1,24 @@
+{
+  "name": "@gigwatch/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "init-db": "bun run --cwd ../.. apps/server/src/cli.ts init-db",
+    "daily": "bun run --cwd ../.. apps/server/src/cli.ts daily",
+    "serve": "bun run --cwd ../.. apps/server/src/cli.ts serve",
+    "serve:watch": "bun run --cwd ../.. --watch apps/server/src/cli.ts serve",
+    "telegram": "bun run --cwd ../.. apps/server/src/cli.ts telegram",
+    "feishu": "bun run --cwd ../.. apps/server/src/cli.ts feishu",
+    "lint": "bun run --cwd ../.. lint:server",
+    "test": "bun run --cwd ../.. test:server"
+  },
+  "dependencies": {
+    "@gigwatch/shared": "workspace:*",
+    "@larksuiteoapi/node-sdk": "^1.54.0",
+    "openai": "^4.56.0"
+  },
+  "devDependencies": {
+    "bun-types": "^1.0.0"
+  }
+}

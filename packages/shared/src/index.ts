@@ -54,3 +54,19 @@ export type DailyReport = {
   }>;
   events: ShowStartEvent[];
 };
+
+export type SearchLogRecord = {
+  query_name: string;
+  url: string;
+  city_code?: string;
+  keyword?: string;
+  run_at: string;
+  results_count?: number;
+};
+
+export type MonitoringPayload = {
+  focusArtists: string[];
+  cityCodes: string[];
+  showStyles: string[];
+  keywords: string[];
+};
