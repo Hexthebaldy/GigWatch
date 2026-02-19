@@ -6,6 +6,7 @@ import { nowInTz, toIso } from "../utils/datetime";
 import { logError, logInfo, logWarn } from "../utils/logger";
 import { AgentRunner } from "../agent/runtime/agentRunner";
 import { ToolRegistry } from "../agent/tools/registry";
+import { createTelegramTool } from "../agent/tools/shows/telegram";
 
 // 写入或更新单条演出记录，冲突时刷新 last_seen_at 及核心字段
 const upsertEvent = (db: Database, event: ShowStartEvent, fetchedAt: string) => {
@@ -116,6 +117,61 @@ const storeReport = (db: Database, report: DailyReport) => {
     VALUES (?, ?)
   `);
   stmt.run(runAt, JSON.stringify(report));
+};
+
+const escapeHtml = (value: string) =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+
+const clip = (value: string, max: number) => (value.length <= max ? value : `${value.slice(0, max - 3)}...`);
+
+const buildTelegramDailyReportMessage = (report: DailyReport) => {
+  const focusHits = report.focusArtists
+    .map((artist) => ({ artist: artist.artist, count: artist.events.length }))
+    .filter((artist) => artist.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  const focusLines = focusHits.length
+    ? focusHits.map((artist) => `- ${escapeHtml(artist.artist)}: ${artist.count} 条`).join("\n")
+    : "- 无关注艺人命中";
+
+  return [
+    "<b>GigWatch 日报</b>",
+    `时间: ${escapeHtml(`${report.runAt} (${report.timezone})`)}`,
+    `新增演出: ${report.events.length} 条`,
+    `摘要: ${escapeHtml(clip(report.summary, 800))}`,
+    "关注艺人命中:",
+    focusLines
+  ].join("\n");
+};
+
+const notifyDailyReportViaTelegram = async (report: DailyReport, env?: AppEnv) => {
+  if (!env?.telegramBotToken || !env.telegramChatId) return;
+
+  const telegramTool = createTelegramTool({
+    botToken: env.telegramBotToken,
+    chatId: env.telegramChatId
+  });
+
+  try {
+    const result = await telegramTool.execute({
+      message: buildTelegramDailyReportMessage(report),
+      priority: "normal",
+      parseMode: "HTML"
+    });
+
+    if (!result.success) {
+      logError(`[DailyReport] Telegram notification failed: ${result.error || "Unknown error"}`);
+      return;
+    }
+
+    logInfo("[DailyReport] Telegram notification sent");
+  } catch (error) {
+    logError(`[DailyReport] Telegram notification failed: ${String(error)}`);
+  }
 };
 
 // 针对每个关注艺人收集最多 5 条匹配演出
@@ -359,5 +415,6 @@ export const runDailyReport = async (db: Database, config: MonitoringConfig, env
 
   storeReport(db, report);
   logInfo(`Report stored at ${report.runAt}, events=${report.events.length}`);
+  await notifyDailyReportViaTelegram(report, env);
   return report;
 };
