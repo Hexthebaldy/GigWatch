@@ -1,0 +1,8 @@
+.p5-chat-panel {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background: var(--gw-cream);
+}

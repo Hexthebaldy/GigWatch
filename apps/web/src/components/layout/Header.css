@@ -1,0 +1,42 @@
+.p5-header {
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px;
+  background: var(--gw-cream);
+  border-bottom: 1px solid var(--gw-gray-300);
+  position: relative;
+  overflow: hidden;
+  z-index: 10;
+}
+
+/* Subtle bottom accent line */
+.p5-header::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 120px;
+  height: 2px;
+  background: var(--gw-ink);
+  animation: gw-glow-in 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.p5-header__logo {
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--gw-ink);
+  letter-spacing: -0.02em;
+  animation: gw-slide-in-left 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.p5-header__tagline {
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--gw-ink-muted);
+  animation: gw-slide-in-left 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s both;
+}

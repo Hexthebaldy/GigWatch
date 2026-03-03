@@ -1,0 +1,44 @@
+:root {
+  /* GigWatch Warm Light Palette */
+  --gw-cream: #fdfbf7;
+  --gw-cream-dark: #f5f1ea;
+  --gw-cream-deep: #ebe6dc;
+  --gw-ink: #1a1a1a;
+  --gw-ink-soft: #3a3a3a;
+  --gw-ink-muted: #6b6560;
+  --gw-accent: #c44830;
+  --gw-accent-dark: #a33b28;
+  --gw-accent-soft: rgba(196, 72, 48, 0.12);
+
+  /* Warm Gray Scale */
+  --gw-gray-100: #f7f4ee;
+  --gw-gray-200: #ede9e0;
+  --gw-gray-300: #d9d3c8;
+  --gw-gray-400: #b5ada2;
+  --gw-gray-500: #8f8780;
+  --gw-gray-600: #6b6560;
+  --gw-gray-700: #4a4540;
+  --gw-gray-800: #2e2a26;
+  --gw-gray-900: #1a1a1a;
+
+  /* Functional Colors */
+  --gw-bg: var(--gw-cream);
+  --gw-surface: var(--gw-cream-dark);
+  --gw-surface-hover: var(--gw-cream-deep);
+  --gw-text: var(--gw-ink);
+  --gw-text-muted: var(--gw-ink-muted);
+  --gw-border: var(--gw-gray-300);
+
+  /* Layout */
+  --header-height: 56px;
+  --sidebar-width: 300px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 400ms ease;
+
+  /* Shadows */
+  --shadow-soft: 0 2px 12px rgba(26, 26, 26, 0.06);
+  --shadow-panel: 0 4px 24px rgba(26, 26, 26, 0.08);
+}

@@ -1,0 +1,12 @@
+.p5-sidebar {
+  grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--gw-gray-100);
+  border-right: 1px solid var(--gw-gray-300);
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  animation: gw-soft-reveal 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}

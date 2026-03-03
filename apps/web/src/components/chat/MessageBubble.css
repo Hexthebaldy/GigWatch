@@ -1,0 +1,51 @@
+.p5-bubble {
+  max-width: 75%;
+  animation: gw-slide-in-up 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.p5-bubble__label {
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--gw-ink-muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.p5-bubble__content {
+  padding: 12px 16px;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.p5-bubble__content p {
+  margin: 0;
+}
+
+.p5-bubble__content p + p {
+  margin-top: 6px;
+}
+
+/* User bubble — dark ink, right aligned, rounded */
+.p5-bubble--user {
+  align-self: flex-end;
+}
+
+.p5-bubble--user .p5-bubble__content {
+  background: var(--gw-ink);
+  color: var(--gw-cream);
+  border-radius: 18px 18px 4px 18px;
+}
+
+/* Assistant bubble — light surface, left aligned */
+.p5-bubble--assistant {
+  align-self: flex-start;
+}
+
+.p5-bubble--assistant .p5-bubble__content {
+  background: var(--gw-cream-dark);
+  color: var(--gw-ink);
+  border: 1px solid var(--gw-gray-300);
+  border-radius: 18px 18px 18px 4px;
+}

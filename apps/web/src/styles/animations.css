@@ -1,0 +1,96 @@
+/* Sidebar / menu items slide in from left */
+@keyframes gw-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Chat messages slide up from bottom */
+@keyframes gw-slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Soft panel reveal */
+@keyframes gw-soft-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Button pop scale */
+@keyframes gw-pop {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Soft breathe shadow */
+@keyframes gw-breathe {
+  0%,
+  100% {
+    box-shadow: 0 2px 12px rgba(26, 26, 26, 0.08);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(26, 26, 26, 0.14);
+  }
+}
+
+/* Staggered list entry */
+@keyframes gw-stagger-in {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Header glow in */
+@keyframes gw-glow-in {
+  from {
+    opacity: 0;
+    transform: scaleX(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+/* Fade in */
+@keyframes gw-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
