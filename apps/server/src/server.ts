@@ -7,6 +7,16 @@ import { runDailyReport } from "./jobs/dailyReport";
 import { nowInTz } from "./utils/datetime";
 import { showstartCities } from "./dictionary/showstartCities";
 import { showstartShowStyles } from "./dictionary/showstartShowStyles";
+import { ToolRegistry } from "./agent/tools/registry";
+import { showstartTool } from "./agent/tools/shows/showstart";
+import { createLoadEventsTool } from "./agent/tools/shows/database";
+import { createLatestReportTool } from "./agent/tools/shows/report";
+import { createSearchEventsTool } from "./agent/tools/shows/search";
+import { createRunMonitoringTool } from "./agent/tools/shows/runMonitoring";
+import { webFetchTool } from "./agent/tools/common/webFetch";
+import { webSearchTool } from "./agent/tools/common/webSearch";
+import { bashExecTool } from "./agent/tools/common/bashExec";
+import { ChatService } from "./agent/chatService";
 
 type ConfigRef = { current: MonitoringConfig };
 
@@ -265,6 +275,18 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
       }
     }
   };
+  // Initialize ChatService for web chat
+  const registry = new ToolRegistry();
+  registry.register(bashExecTool);
+  registry.register(webFetchTool);
+  registry.register(webSearchTool);
+  registry.register(showstartTool);
+  registry.register(createLoadEventsTool(db));
+  registry.register(createSearchEventsTool(db));
+  registry.register(createLatestReportTool(db));
+  registry.register(createRunMonitoringTool(db, env));
+  const chatService = new ChatService(db, registry, env);
+
   let isRunning = false;
   let lastAutoDay = "";
 
@@ -335,7 +357,74 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
         return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
       }
 
-      return new Response(indexHtml, { headers: { "Content-Type": "text/html" } });
+      // Chat message history (supports ?limit=N, default 30)
+      if (url.pathname === "/api/chat/messages" && req.method === "GET") {
+        const limit = Math.min(Math.max(Number(url.searchParams.get("limit")) || 30, 1), 200);
+        const messages = chatService.listVisibleMessages(limit);
+        return new Response(JSON.stringify(messages), {
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      // Chat streaming endpoint (SSE)
+      if (url.pathname === "/api/chat" && req.method === "POST") {
+        let body: any;
+        try {
+          body = await req.json();
+        } catch {
+          return new Response(JSON.stringify({ error: "invalid JSON body" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+        const text = typeof body.text === "string" ? body.text.trim() : "";
+        if (!text) {
+          return new Response(JSON.stringify({ error: "empty message" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+
+        const stream = new ReadableStream({
+          async start(controller) {
+            const encoder = new TextEncoder();
+            const send = (event: string, data: unknown) => {
+              controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+            };
+            try {
+              const gen = chatService.handleIncomingMessageStream({
+                source: "web",
+                text
+              });
+              for await (const event of gen) {
+                send(event.type, event);
+              }
+            } catch (err) {
+              send("error", { type: "error", message: String(err) });
+            } finally {
+              controller.close();
+            }
+          }
+        });
+
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive"
+          }
+        });
+      }
+
+      // Catch-all: only serve HTML for non-API paths
+      if (!url.pathname.startsWith("/api/")) {
+        return new Response(indexHtml, { headers: { "Content-Type": "text/html" } });
+      }
+
+      return new Response(JSON.stringify({ error: "not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      });
     }
   });
 

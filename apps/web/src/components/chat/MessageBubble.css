@@ -1,5 +1,9 @@
 .p5-bubble {
   max-width: 75%;
+}
+
+/* Only animate new messages, not history */
+.p5-bubble--animate {
   animation: gw-slide-in-up 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
@@ -48,4 +52,20 @@
   color: var(--gw-ink);
   border: 1px solid var(--gw-gray-300);
   border-radius: 18px 18px 18px 4px;
+}
+
+/* Streaming cursor blink */
+.p5-bubble__cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--gw-ink-muted);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: gw-cursor-blink 0.8s step-end infinite;
+}
+
+@keyframes gw-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }

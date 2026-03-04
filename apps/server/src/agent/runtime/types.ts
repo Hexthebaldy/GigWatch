@@ -11,3 +11,11 @@ export type AgentRuntimeResult = {
   messages: OpenAI.ChatCompletionMessageParam[];
   steps: AgentRuntimeStep[];
 };
+
+/** Events yielded by the streaming agent runner */
+export type AgentStreamEvent =
+  | { type: "token"; content: string }
+  | { type: "tool_start"; toolName: string; arguments: Record<string, unknown> }
+  | { type: "tool_end"; toolName: string; success: boolean }
+  | { type: "done"; reply: string }
+  | { type: "error"; message: string };

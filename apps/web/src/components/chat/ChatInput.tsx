@@ -1,8 +1,20 @@
 import { useState } from "react";
 import "./ChatInput.css";
 
-export const ChatInput = () => {
+interface Props {
+  onSend: (text: string) => void;
+  disabled?: boolean;
+}
+
+export const ChatInput = ({ onSend, disabled }: Props) => {
   const [value, setValue] = useState("");
+
+  const submit = () => {
+    const text = value.trim();
+    if (!text || disabled) return;
+    setValue("");
+    onSend(text);
+  };
 
   return (
     <div className="p5-chat-input">
@@ -13,16 +25,14 @@ export const ChatInput = () => {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && value.trim()) {
-            setValue("");
-          }
+          if (e.key === "Enter") submit();
         }}
+        disabled={disabled}
       />
       <button
         className="p5-chat-input__send"
-        onClick={() => {
-          if (value.trim()) setValue("");
-        }}
+        onClick={submit}
+        disabled={disabled}
       >
         SEND
       </button>

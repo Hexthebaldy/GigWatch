@@ -3,7 +3,7 @@ import type { AppEnv } from "../../config";
 import { resolveModelTemperature } from "../../clients/modelTemperature";
 import { logError, logInfo, logWarn } from "../../utils/logger";
 import type { ToolRegistry } from "../tools/registry";
-import type { AgentRuntimeResult, AgentRuntimeStep } from "./types";
+import type { AgentRuntimeResult, AgentRuntimeStep, AgentStreamEvent } from "./types";
 
 const MAX_ITERATIONS = 50;
 
@@ -226,6 +226,185 @@ export class AgentRunner {
           payload: { error: "max_iterations_reached" }
         }
       ]
+    };
+  }
+
+  async *runTurnStreaming(
+    initialMessages: OpenAI.ChatCompletionMessageParam[]
+  ): AsyncGenerator<AgentStreamEvent, AgentRuntimeResult> {
+    if (!this.llm || !this.llmModel) {
+      const fallback = "未配置 OPENAI_API_KEY，无法理解自然语言任务。请先配置后重试。";
+      yield { type: "error", message: fallback };
+      return {
+        reply: fallback,
+        messages: [...initialMessages, { role: "assistant", content: fallback }],
+        steps: [{ stepType: "system_error", payload: { error: "missing_openai_api_key" } }]
+      };
+    }
+
+    const messages = [...initialMessages];
+    const steps: AgentRuntimeStep[] = [];
+    const availableTools = this.tools.toFunctionSchemas();
+
+    let iterations = 0;
+    while (iterations < MAX_ITERATIONS) {
+      iterations += 1;
+      try {
+        logInfo(`[AgentRunner] Streaming LLM call (iteration ${iterations}), model=${this.llmModel}`);
+
+        const stream = await this.llm.chat.completions.create({
+          model: this.llmModel,
+          messages,
+          tools: availableTools,
+          tool_choice: "auto",
+          temperature: this.temperature,
+          stream: true
+        });
+
+        let contentAccum = "";
+        const toolCallAccum: Map<number, {
+          id: string;
+          name: string;
+          arguments: string;
+        }> = new Map();
+
+        for await (const chunk of stream) {
+          const delta = chunk.choices[0]?.delta;
+          if (!delta) continue;
+
+          if (delta.content) {
+            contentAccum += delta.content;
+            yield { type: "token", content: delta.content };
+          }
+
+          if (delta.tool_calls) {
+            for (const tc of delta.tool_calls) {
+              const existing = toolCallAccum.get(tc.index);
+              if (!existing) {
+                toolCallAccum.set(tc.index, {
+                  id: tc.id || "",
+                  name: tc.function?.name || "",
+                  arguments: tc.function?.arguments || ""
+                });
+              } else {
+                if (tc.id) existing.id = tc.id;
+                if (tc.function?.name) existing.name += tc.function.name;
+                if (tc.function?.arguments) existing.arguments += tc.function.arguments;
+              }
+            }
+          }
+        }
+
+        // Build assistant message
+        const toolCalls = Array.from(toolCallAccum.values()).filter(tc => tc.id && tc.name);
+        const assistantMessage: OpenAI.ChatCompletionMessageParam = toolCalls.length > 0
+          ? {
+              role: "assistant",
+              content: contentAccum || null,
+              tool_calls: toolCalls.map(tc => ({
+                id: tc.id,
+                type: "function" as const,
+                function: { name: tc.name, arguments: tc.arguments }
+              }))
+            }
+          : { role: "assistant", content: contentAccum };
+
+        messages.push(assistantMessage);
+        steps.push({
+          stepType: "assistant_message",
+          payload: {
+            content: contentAccum.trim(),
+            toolCalls: toolCalls.length
+          }
+        });
+
+        // Handle tool calls
+        if (toolCalls.length > 0) {
+          logInfo(`[AgentRunner] LLM requested ${toolCalls.length} tool calls (streaming)`);
+          for (const tc of toolCalls) {
+            let toolArgs: Record<string, unknown> = {};
+            try {
+              toolArgs = JSON.parse(tc.arguments || "{}");
+            } catch (error) {
+              const errorMsg = `Tool arguments parse error: ${String(error)}`;
+              logWarn(`[AgentRunner] ${errorMsg}`);
+              steps.push({ stepType: "system_error", toolName: tc.name, payload: { error: errorMsg } });
+              messages.push({
+                role: "tool",
+                tool_call_id: tc.id,
+                content: JSON.stringify({ success: false, error: errorMsg })
+              });
+              continue;
+            }
+
+            yield { type: "tool_start", toolName: tc.name, arguments: toolArgs };
+            steps.push({ stepType: "tool_call", toolName: tc.name, payload: { arguments: toolArgs } });
+
+            const tool = this.tools.get(tc.name);
+            if (!tool) {
+              const errorMsg = `Tool "${tc.name}" not found`;
+              logWarn(`[AgentRunner] ${errorMsg}`);
+              steps.push({ stepType: "system_error", toolName: tc.name, payload: { error: errorMsg } });
+              messages.push({
+                role: "tool",
+                tool_call_id: tc.id,
+                content: JSON.stringify({ success: false, error: errorMsg })
+              });
+              yield { type: "tool_end", toolName: tc.name, success: false };
+              continue;
+            }
+
+            try {
+              const result = await tool.execute(toolArgs);
+              const compacted = compactToolResult(result);
+              steps.push({
+                stepType: "tool_result",
+                toolName: tc.name,
+                payload: { success: !!(compacted as { success?: boolean })?.success, result: compacted as Record<string, unknown> }
+              });
+              messages.push({
+                role: "tool",
+                tool_call_id: tc.id,
+                content: JSON.stringify(compacted)
+              });
+              yield { type: "tool_end", toolName: tc.name, success: true };
+            } catch (error) {
+              const errorResult = { success: false, error: String(error) };
+              steps.push({ stepType: "tool_result", toolName: tc.name, payload: { success: false, result: errorResult } });
+              messages.push({
+                role: "tool",
+                tool_call_id: tc.id,
+                content: JSON.stringify(errorResult)
+              });
+              yield { type: "tool_end", toolName: tc.name, success: false };
+            }
+          }
+          continue;
+        }
+
+        // Final text reply
+        const reply = contentAccum.trim();
+        if (reply) {
+          yield { type: "done", reply };
+          return { reply, messages, steps };
+        }
+      } catch (error) {
+        const errorMsg = `LLM iteration failed: ${String(error)}`;
+        logError(`[AgentRunner] ${errorMsg}`);
+        steps.push({ stepType: "system_error", payload: { error: errorMsg } });
+        const fallback = "处理请求时出现错误，请稍后再试。";
+        yield { type: "error", message: fallback };
+        return { reply: fallback, messages, steps };
+      }
+    }
+
+    logWarn("[AgentRunner] Reached max iterations without a final response (streaming)");
+    const fallback = "任务处理未完成，请换种说法再试。";
+    yield { type: "error", message: fallback };
+    return {
+      reply: fallback,
+      messages,
+      steps: [...steps, { stepType: "system_error", payload: { error: "max_iterations_reached" } }]
     };
   }
 }

@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type { AppEnv } from "../config";
 import { logError } from "../utils/logger";
+import type { AgentStreamEvent } from "./runtime/types";
 import type { StoredChatMessage } from "./context/types";
 import { ChatRepository } from "./context/chatRepository";
 import { ContextManager } from "./context/contextManager";
@@ -164,6 +165,102 @@ export class ChatService {
         assistantMessageId: assistantMessage.id,
         runId: run.id
       };
+    }
+  }
+
+  async *handleIncomingMessageStream(
+    message: IncomingChatMessage
+  ): AsyncGenerator<AgentStreamEvent & { userMessageId?: number }> {
+    const userText = (message.text || "").trim();
+    if (!userText) {
+      yield { type: "error", message: "Empty message" };
+      return;
+    }
+
+    const userMessage = this.repository.insertMessage({
+      role: "user",
+      content: userText,
+      source: message.source,
+      externalChatId: message.externalChatId,
+      externalUserId: message.externalUserId,
+      metadata: message.metadata,
+      visible: true
+    });
+
+    // Emit the userMessageId so the frontend knows the persisted ID
+    yield { type: "token", content: "", userMessageId: userMessage.id };
+
+    const run = this.repository.startAgentRun({
+      triggerMessageId: userMessage.id,
+      source: message.source,
+      model: this.runner.getModel(),
+      metadata: {
+        externalChatId: message.externalChatId,
+        externalUserId: message.externalUserId
+      }
+    });
+
+    try {
+      const prompt = await this.contextManager.buildPrompt({
+        maxMessageId: userMessage.id,
+        systemPrompt: SYSTEM_PROMPT,
+        model: this.runner.getModel()
+      });
+
+      const gen = this.runner.runTurnStreaming(prompt.messages);
+      let runtimeResult;
+      while (true) {
+        const { value, done } = await gen.next();
+        if (done) {
+          runtimeResult = value;
+          break;
+        }
+        yield value;
+      }
+
+      runtimeResult.steps.forEach((step, index) => {
+        this.repository.insertAgentStep(run.id, index + 1, {
+          ...step,
+          payload: trimStepPayload(step.payload)
+        });
+      });
+
+      this.repository.insertMessage({
+        role: "assistant",
+        content: runtimeResult.reply,
+        source: "agent",
+        externalChatId: message.externalChatId,
+        externalUserId: message.externalUserId,
+        metadata: {
+          runId: run.id,
+          estimatedPromptTokens: prompt.estimatedPromptTokens,
+          promptTokenBudget: prompt.promptTokenBudget,
+          modelContextWindow: prompt.modelContextWindow
+        },
+        visible: true
+      });
+
+      const isFailedReply =
+        runtimeResult.reply.includes("处理请求时出现错误") ||
+        runtimeResult.reply.includes("任务处理未完成") ||
+        runtimeResult.reply.includes("未配置 OPENAI_API_KEY");
+      this.repository.finishAgentRun(run.id, isFailedReply ? "failed" : "success");
+
+      await this.contextManager.maybeCompactHistory();
+    } catch (error) {
+      logError(`[ChatService] Stream failed: ${String(error)}`);
+      this.repository.finishAgentRun(run.id, "failed", String(error));
+      const fallback = "处理请求时出现错误，请稍后再试。";
+      this.repository.insertMessage({
+        role: "assistant",
+        content: fallback,
+        source: "agent",
+        externalChatId: message.externalChatId,
+        externalUserId: message.externalUserId,
+        metadata: { runId: run.id, error: String(error) },
+        visible: true
+      });
+      yield { type: "error", message: fallback };
     }
   }
 

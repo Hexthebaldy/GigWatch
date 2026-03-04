@@ -1,4 +1,12 @@
 import type { DailyReport, MonitoringConfig, MonitoringPayload, SearchLogRecord } from "@gigwatch/shared";
+import type { ChatMessage } from "./data/mockData";
+
+export type ChatStreamEvent =
+  | { type: "token"; content: string; userMessageId?: number }
+  | { type: "tool_start"; toolName: string }
+  | { type: "tool_end"; toolName: string; success: boolean }
+  | { type: "done"; reply: string }
+  | { type: "error"; message: string };
 
 const toError = async (res: Response) => {
   let detail = "";
@@ -39,5 +47,70 @@ export const api = {
       body: JSON.stringify(payload)
     });
     return expectJson<{ ok: boolean }>(res);
+  },
+
+  async getChatMessages(limit = 30): Promise<ChatMessage[]> {
+    const res = await fetch(`/api/chat/messages?limit=${limit}`);
+    const data = await expectJson<Array<{
+      id: number;
+      role: "user" | "assistant";
+      content: string;
+      createdAt: string;
+    }>>(res);
+    return data.map((m) => ({
+      id: String(m.id),
+      role: m.role,
+      content: m.content
+    }));
+  },
+
+  async sendChatMessage(
+    text: string,
+    onEvent: (event: ChatStreamEvent) => void,
+    signal?: AbortSignal
+  ): Promise<void> {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+      signal
+    });
+
+    if (!res.ok) throw await toError(res);
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("text/event-stream")) {
+      const body = await res.text();
+      throw new Error(`Expected SSE stream but got ${contentType}: ${body.slice(0, 200)}`);
+    }
+    if (!res.body) throw new Error("No response body");
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // Parse SSE lines
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      let currentEventType = "";
+      for (const line of lines) {
+        if (line.startsWith("event: ")) {
+          currentEventType = line.slice(7).trim();
+        } else if (line.startsWith("data: ") && currentEventType) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            onEvent({ ...data, type: currentEventType } as ChatStreamEvent);
+          } catch {
+            // skip malformed JSON
+          }
+          currentEventType = "";
+        }
+      }
+    }
   }
 };
