@@ -39,7 +39,7 @@ export const loadEnv = (): AppEnv => {
   return {
     timezone: Bun.env.APP_TIMEZONE || "Asia/Shanghai",
     dbPath: Bun.env.DB_PATH || "./data/gigwatch.sqlite",
-    serverPort: Number(Bun.env.APP_PORT || 3000),
+    serverPort: Number(Bun.env.APP_PORT || 9826),
     openaiApiKey: Bun.env.OPENAI_API_KEY,
     openaiBaseUrl: Bun.env.OPENAI_BASE_URL,
     openaiModel: Bun.env.OPENAI_MODEL,
