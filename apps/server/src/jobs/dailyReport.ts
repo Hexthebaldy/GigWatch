@@ -230,7 +230,6 @@ const buildQueriesFromConfig = (config: MonitoringConfig): MonitoringQuery[] => 
     base.push({ name: `关键词-${kw}`, keyword: kw });
   }
 
-  console.log('#all the queries: ', base)
   return base;
 };
 
