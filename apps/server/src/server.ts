@@ -17,6 +17,7 @@ import { webFetchTool } from "./agent/tools/common/webFetch";
 import { webSearchTool } from "./agent/tools/common/webSearch";
 import { bashExecTool } from "./agent/tools/common/bashExec";
 import { ChatService } from "./agent/chatService";
+import { createUpdateMonitoringConfigTool } from "./agent/tools/shows/config";
 
 type ConfigRef = { current: MonitoringConfig };
 
@@ -263,7 +264,7 @@ const shouldRunNow = (timezone: string, lastDay: string) => {
 };
 
 export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv) => {
-  const port = env.serverPort || 3000;
+  const port = env.serverPort || 9826;
   const configRef: ConfigRef = {
     current: {
       app: config.app,
@@ -285,6 +286,7 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
   registry.register(createSearchEventsTool(db));
   registry.register(createLatestReportTool(db));
   registry.register(createRunMonitoringTool(db, env));
+  registry.register(createUpdateMonitoringConfigTool());
   const chatService = new ChatService(db, registry, env);
 
   let isRunning = false;
