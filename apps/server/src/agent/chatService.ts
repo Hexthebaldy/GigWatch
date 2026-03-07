@@ -95,7 +95,7 @@ export class ChatService {
     const run = this.repository.startAgentRun({
       triggerMessageId: userMessage.id,
       source: message.source,
-      model: this.runner.getModel(),
+      model: this.runner.model,
       metadata: {
         externalChatId: message.externalChatId,
         externalUserId: message.externalUserId
@@ -106,7 +106,7 @@ export class ChatService {
       const prompt = await this.contextManager.buildPrompt({
         maxMessageId: userMessage.id, // 上下文截断点
         systemPrompt: SYSTEM_PROMPT,
-        model: this.runner.getModel()
+        model: this.runner.model
       });
 
       const runtimeResult = await this.runner.runTurn(prompt.messages);
@@ -193,7 +193,7 @@ export class ChatService {
     const run = this.repository.startAgentRun({
       triggerMessageId: userMessage.id,
       source: message.source,
-      model: this.runner.getModel(),
+      model: this.runner.model,
       metadata: {
         externalChatId: message.externalChatId,
         externalUserId: message.externalUserId
@@ -204,7 +204,7 @@ export class ChatService {
       const prompt = await this.contextManager.buildPrompt({
         maxMessageId: userMessage.id,
         systemPrompt: SYSTEM_PROMPT,
-        model: this.runner.getModel()
+        model: this.runner.model
       });
 
       const gen = this.runner.runTurnStreaming(prompt.messages);

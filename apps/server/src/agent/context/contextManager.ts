@@ -28,15 +28,17 @@ const resolveModelContextWindow = (model: string | undefined) => {
 };
 
 // 将存储层消息结构转换为 OpenAI 对话消息结构。
-const toChatMessage = (message: StoredChatMessage): OpenAI.ChatCompletionMessageParam => {
+// 注意：Kimi K2.5 等开启 thinking 的模型要求 assistant 消息必须携带 reasoning_content，
+// 历史消息没有真实推理内容时补空字符串以满足 API 校验。
+const toChatMessage = (message: StoredChatMessage): Record<string, unknown> => {
   if (message.role === "assistant") {
-    return { role: "assistant", content: message.content };
+    return { role: "assistant", content: message.content, reasoning_content: "" };
   }
   if (message.role === "system") {
     return { role: "system", content: message.content };
   }
   if (message.role === "tool") {
-    return { role: "assistant", content: message.content };
+    return { role: "assistant", content: message.content, reasoning_content: "" };
   }
   return { role: "user", content: message.content };
 };
@@ -111,7 +113,7 @@ export class ContextManager {
       messages.push({ role: "system", content: summaryPrompt });
     }
     for (const message of selected) {
-      messages.push(toChatMessage(message));
+      messages.push(toChatMessage(message) as unknown as OpenAI.ChatCompletionMessageParam);
     }
 
     return {
