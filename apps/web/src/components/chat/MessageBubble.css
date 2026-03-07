@@ -1,71 +1,187 @@
-.p5-bubble {
-  max-width: 75%;
+.bubble {
+  max-width: 82%;
 }
 
-/* Only animate new messages, not history */
-.p5-bubble--animate {
-  animation: gw-slide-in-up 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+.bubble--animate {
+  animation: slide-up 0.35s var(--ease-out) both;
 }
 
-.p5-bubble__label {
-  font-family: "Space Grotesk", "Inter", sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--gw-ink-muted);
-  margin-bottom: 4px;
-  text-transform: uppercase;
-}
-
-.p5-bubble__content {
-  padding: 12px 16px;
-  line-height: 1.6;
+.bubble__content {
+  padding: 10px 16px;
+  line-height: 1.7;
   font-size: 14px;
 }
 
-.p5-bubble__content p {
-  margin: 0;
-}
-
-.p5-bubble__content p + p {
-  margin-top: 6px;
-}
-
-/* User bubble — dark ink, right aligned, rounded */
-.p5-bubble--user {
+/* --- User bubble: right-aligned, ink background --- */
+.bubble--user {
   align-self: flex-end;
 }
 
-.p5-bubble--user .p5-bubble__content {
-  background: var(--gw-ink);
-  color: var(--gw-cream);
-  border-radius: 18px 18px 4px 18px;
+.bubble--user .bubble__content {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 16px 16px 4px 16px;
+  white-space: pre-wrap;
 }
 
-/* Assistant bubble — light surface, left aligned */
-.p5-bubble--assistant {
+/* --- Assistant bubble: left-aligned, subtle surface --- */
+.bubble--assistant {
   align-self: flex-start;
 }
 
-.p5-bubble--assistant .p5-bubble__content {
-  background: var(--gw-cream-dark);
-  color: var(--gw-ink);
-  border: 1px solid var(--gw-gray-300);
-  border-radius: 18px 18px 18px 4px;
+.bubble--assistant .bubble__content {
+  background: var(--paper-warm);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 16px 16px 16px 4px;
 }
 
-/* Streaming cursor blink */
-.p5-bubble__cursor {
+/* --- Markdown typography inside assistant bubbles --- */
+.bubble__markdown h1,
+.bubble__markdown h2,
+.bubble__markdown h3,
+.bubble__markdown h4,
+.bubble__markdown h5,
+.bubble__markdown h6 {
+  font-family: "Newsreader", "Georgia", serif;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.4em;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.bubble__markdown h1 { font-size: 1.4em; }
+.bubble__markdown h2 { font-size: 1.25em; }
+.bubble__markdown h3 { font-size: 1.1em; }
+
+.bubble__markdown h1:first-child,
+.bubble__markdown h2:first-child,
+.bubble__markdown h3:first-child {
+  margin-top: 0;
+}
+
+.bubble__markdown p {
+  margin: 0;
+}
+
+.bubble__markdown p + p {
+  margin-top: 0.6em;
+}
+
+.bubble__markdown ul,
+.bubble__markdown ol {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.bubble__markdown ul {
+  list-style: disc;
+}
+
+.bubble__markdown ol {
+  list-style: decimal;
+}
+
+.bubble__markdown li {
+  margin: 0.2em 0;
+}
+
+.bubble__markdown li + li {
+  margin-top: 0.3em;
+}
+
+.bubble__markdown code {
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  font-size: 0.88em;
+  background: var(--paper-deep);
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  color: var(--ink-soft);
+}
+
+.bubble__markdown pre {
+  margin: 0.6em 0;
+  padding: 12px 14px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.bubble__markdown pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.bubble__markdown blockquote {
+  border-left: 3px solid var(--border-strong);
+  padding-left: 12px;
+  margin: 0.6em 0;
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+.bubble__markdown hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.8em 0;
+}
+
+.bubble__markdown strong {
+  font-weight: 600;
+}
+
+.bubble__markdown em {
+  font-style: italic;
+}
+
+.bubble__markdown a {
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.bubble__markdown a:hover {
+  color: var(--ink);
+}
+
+.bubble__markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.6em 0;
+  font-size: 13px;
+}
+
+.bubble__markdown th,
+.bubble__markdown td {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.bubble__markdown th {
+  background: var(--paper-deep);
+  font-weight: 600;
+}
+
+/* --- Streaming cursor --- */
+.bubble__cursor {
   display: inline-block;
   width: 2px;
   height: 1em;
-  background: var(--gw-ink-muted);
+  background: var(--ink-muted);
   margin-left: 2px;
   vertical-align: text-bottom;
-  animation: gw-cursor-blink 0.8s step-end infinite;
+  animation: cursor-blink 0.8s step-end infinite;
 }
 
-@keyframes gw-cursor-blink {
+@keyframes cursor-blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }

@@ -1,12 +1,13 @@
-import { Header } from "./Header";
-import { Sidebar } from "./Sidebar";
 import { ChatPanel } from "../chat/ChatPanel";
 import "./AppShell.css";
 
 export const AppShell = () => (
   <div className="app-shell">
-    <Header />
-    <Sidebar />
-    <ChatPanel />
+    <div className="app-shell__page">
+      <header className="app-shell__header">
+        <span className="app-shell__title">GigWatch</span>
+      </header>
+      <ChatPanel />
+    </div>
   </div>
 );

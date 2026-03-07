@@ -10,7 +10,6 @@ export const ChatPanel = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streamingContent, setStreamingContent] = useState("");
   const [isSending, setIsSending] = useState(false);
-  // Messages loaded from history should not animate; track where "new" starts
   const [historyCount, setHistoryCount] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -94,13 +93,13 @@ export const ChatPanel = () => {
   );
 
   return (
-    <main className="p5-chat-panel">
+    <div className="chat-panel">
       <MessageList
         messages={messages}
         streamingContent={streamingContent}
         historyCount={historyCount}
       />
       <ChatInput onSend={handleSend} disabled={isSending} />
-    </main>
+    </div>
   );
 };

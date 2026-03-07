@@ -1,56 +1,60 @@
-.p5-chat-input {
+.chat-input {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 24px;
-  background: var(--gw-cream);
-  border-top: 1px solid var(--gw-gray-300);
-  animation: gw-fade-in 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.6s both;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 14px 24px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--paper);
 }
 
-.p5-chat-input__field {
+.chat-input__field {
   flex: 1;
-  padding: 12px 20px;
-  background: var(--gw-cream-dark);
-  color: var(--gw-ink);
-  border: 1px solid var(--gw-gray-300);
-  border-radius: 24px;
+  padding: 10px 14px;
+  background: var(--paper-warm);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: var(--input-radius);
   font-size: 14px;
+  line-height: 1.6;
+  resize: none;
   transition:
     border-color var(--transition-fast),
     box-shadow var(--transition-fast);
 }
 
-.p5-chat-input__field::placeholder {
-  color: var(--gw-gray-500);
+.chat-input__field::placeholder {
+  color: var(--ink-faint);
 }
 
-.p5-chat-input__field:focus {
-  border-color: var(--gw-ink-soft);
-  box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.06);
+.chat-input__field:focus {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 2px rgba(19, 39, 29, 0.06);
 }
 
-.p5-chat-input__send {
-  font-family: "Space Grotesk", "Inter", sans-serif;
-  font-size: 15px;
-  font-weight: 700;
-  padding: 10px 24px;
-  background: var(--gw-ink);
-  color: var(--gw-cream);
-  border-radius: 20px;
+.chat-input__send {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: var(--input-radius);
   transition:
     background var(--transition-fast),
     transform var(--transition-fast);
-  animation:
-    gw-pop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.8s both,
-    gw-breathe 3s ease-in-out 1.2s infinite;
 }
 
-.p5-chat-input__send:hover {
-  background: var(--gw-ink-soft);
-  transform: scale(1.03);
+.chat-input__send:hover {
+  background: var(--ink-soft);
 }
 
-.p5-chat-input__send:active {
-  transform: scale(0.97);
+.chat-input__send:active {
+  transform: scale(0.95);
+}
+
+.chat-input__send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }

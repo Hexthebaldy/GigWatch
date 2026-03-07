@@ -1,12 +1,51 @@
+/*
+ * The outer shell fills the viewport and provides the
+ * grainy paper-textured background behind the chat "page".
+ */
 .app-shell {
-  display: grid;
-  grid-template-areas:
-    "header  header"
-    "sidebar main";
-  grid-template-columns: var(--sidebar-width) 1fr;
-  grid-template-rows: var(--header-height) 1fr;
+  width: 100%;
   height: 100vh;
-  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper-warm);
+  /* Noise grain overlay via inline SVG filter */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+}
+
+/*
+ * The central "page" — a tall rectangle sitting in the viewport center.
+ * It will later resize/reposition as other modules are added.
+ */
+.app-shell__page {
+  width: min(92vw, 90vh * 16 / 9);
+  height: min(88vh, 92vw * 9 / 16);
+  aspect-ratio: 16 / 9;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--chat-radius);
+  box-shadow:
+    0 1px 3px rgba(19, 39, 29, 0.04),
+    0 8px 32px rgba(19, 39, 29, 0.06);
   overflow: hidden;
-  background: var(--gw-cream);
+  animation: fade-in 0.5s var(--ease-out) both;
+  /* Subtle inner grain */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"),
+    linear-gradient(var(--paper), var(--paper));
+}
+
+.app-shell__header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.app-shell__title {
+  font-family: "Newsreader", "Georgia", serif;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.01em;
 }

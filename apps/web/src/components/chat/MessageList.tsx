@@ -6,7 +6,6 @@ import "./MessageList.css";
 interface Props {
   messages: ChatMessage[];
   streamingContent: string;
-  /** Number of messages loaded from history (no animation for these) */
   historyCount: number;
 }
 
@@ -15,7 +14,6 @@ export const MessageList = ({ messages, streamingContent, historyCount }: Props)
   const endRef = useRef<HTMLDivElement>(null);
   const isFirstRender = useRef(true);
 
-  // On first load, jump to bottom instantly; on new messages, smooth-scroll
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -26,7 +24,7 @@ export const MessageList = ({ messages, streamingContent, historyCount }: Props)
   }, [messages, streamingContent]);
 
   return (
-    <div className="p5-message-list" ref={containerRef}>
+    <div className="message-list" ref={containerRef}>
       {messages.map((msg, index) => (
         <MessageBubble
           key={msg.id}

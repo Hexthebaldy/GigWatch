@@ -1,36 +1,36 @@
 import { memo } from "react";
+import Markdown from "react-markdown";
 import type { ChatMessage } from "../../data/mockData";
 import "./MessageBubble.css";
 
 interface Props {
   message: ChatMessage;
-  /** Whether to play entrance animation */
   animate: boolean;
-  /** Index within new messages, used for staggered delay */
   animateIndex: number;
   streaming?: boolean;
 }
 
 export const MessageBubble = memo(({ message, animate, animateIndex, streaming }: Props) => {
   const isUser = message.role === "user";
-  const className = [
-    "p5-bubble",
-    isUser ? "p5-bubble--user" : "p5-bubble--assistant",
-    animate ? "p5-bubble--animate" : "",
+  const cls = [
+    "bubble",
+    isUser ? "bubble--user" : "bubble--assistant",
+    animate ? "bubble--animate" : "",
   ].join(" ");
 
   return (
     <div
-      className={className}
-      style={animate ? { animationDelay: `${animateIndex * 0.08}s` } : undefined}
+      className={cls}
+      style={animate ? { animationDelay: `${animateIndex * 0.06}s` } : undefined}
     >
-      {!isUser && <div className="p5-bubble__label">GIGWATCH</div>}
-      <div className="p5-bubble__content">
-        {message.content.split("\n").map((line, i) => (
-          <p key={i}>{line}</p>
-        ))}
-        {streaming && <span className="p5-bubble__cursor" />}
-      </div>
+      {isUser ? (
+        <div className="bubble__content">{message.content}</div>
+      ) : (
+        <div className="bubble__content bubble__markdown">
+          <Markdown>{message.content}</Markdown>
+          {streaming && <span className="bubble__cursor" />}
+        </div>
+      )}
     </div>
   );
 });

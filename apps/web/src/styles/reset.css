@@ -11,28 +11,16 @@ body,
 #root {
   height: 100%;
   width: 100%;
-  overflow: hidden;
 }
 
 body {
   font-family: "Inter", "PingFang SC", "Noto Sans SC", sans-serif;
   font-size: 14px;
-  line-height: 1.5;
-  color: var(--gw-ink);
-  background: var(--gw-cream);
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--paper-warm);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: "Space Grotesk", "Inter", sans-serif;
-  font-weight: 700;
-  line-height: 1.2;
 }
 
 ul,
