@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { ShowStartEvent } from "@gigwatch/shared";
 import { api } from "../../api";
 import { Close } from "../ui/Icon";
+import { Thumb } from "../ui/Thumb";
 import "./EventsPanel.css";
 
 type Tab = "recent" | "focus";
@@ -51,12 +52,29 @@ export const EventsPanel = ({ open, onClose }: Props) => {
     }
   }, [open, tab, fetchEvents]);
 
+  const [settled, setSettled] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) setSettled(false);
+  }, [open]);
+
+  useEffect(() => {
+    const el = panelRef.current;
+    if (!el || !open) return;
+    const onEnd = (e: TransitionEvent) => {
+      if (e.target === el) setSettled(true);
+    };
+    el.addEventListener("transitionend", onEnd);
+    return () => el.removeEventListener("transitionend", onEnd);
+  }, [open]);
+
   const switchTab = (t: Tab) => {
     if (t !== tab) setTab(t);
   };
 
   return (
-    <div className={`events-panel ${open ? "events-panel--open" : ""}`}>
+    <div ref={panelRef} className={`events-panel ${open ? "events-panel--open" : ""}`}>
       <div className="events-panel__inner">
         <div className="events-panel__header">
           <div className="events-panel__tabs">
@@ -97,7 +115,9 @@ export const EventsPanel = ({ open, onClose }: Props) => {
                 rel="noopener noreferrer"
               >
                 {ev.poster && (
-                  <img className="event-card__poster" src={ev.poster} alt="" loading="lazy" />
+                  settled
+                    ? <Thumb className="event-card__poster" src={ev.poster} size={52} />
+                    : <div className="event-card__poster" />
                 )}
                 <div className="event-card__body">
                   <div className="event-card__title">{ev.title}</div>
