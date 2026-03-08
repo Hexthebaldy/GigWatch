@@ -63,7 +63,7 @@ export const EventsPanel = ({ open, onClose }: Props) => {
     const el = panelRef.current;
     if (!el || !open) return;
     const onEnd = (e: TransitionEvent) => {
-      if (e.target === el) setSettled(true);
+      if (e.target === el && e.propertyName === "flex-grow") setSettled(true);
     };
     el.addEventListener("transitionend", onEnd);
     return () => el.removeEventListener("transitionend", onEnd);
