@@ -22,7 +22,7 @@ export const Sidebar = ({ collapsed, onToggle, onShowEvents, eventsOpen }: Props
           onClick={onShowEvents}
         >
           <Calendar />
-          <span>最近演出</span>
+          <span>演出</span>
         </button>
       </nav>
     )}
