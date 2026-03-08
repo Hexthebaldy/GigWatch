@@ -12,7 +12,7 @@ interface Props {
 
 export const ChatPanel = ({ shrink }: Props) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [streamingContent, setStreamingContent] = useState("");
+  const [streamingId, setStreamingId] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [historyCount, setHistoryCount] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
@@ -29,13 +29,23 @@ export const ChatPanel = ({ shrink }: Props) => {
       if (isSending) return;
       setIsSending(true);
 
-      const tempUserMsg: ChatMessage = {
-        id: `temp-user-${Date.now()}`,
+      const ts = Date.now();
+      const userMsg: ChatMessage = {
+        id: `user-${ts}`,
         role: "user",
         content: text,
       };
-      setMessages((prev) => [...prev, tempUserMsg]);
-      setStreamingContent("");
+      const assistantId = `assistant-${ts}`;
+      const assistantMsg: ChatMessage = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+      };
+
+      // Insert both user message and empty assistant placeholder at once.
+      // The assistant bubble stays in the DOM for the entire lifecycle.
+      setMessages((prev) => [...prev, userMsg, assistantMsg]);
+      setStreamingId(assistantId);
 
       const controller = new AbortController();
       abortRef.current = controller;
@@ -47,30 +57,34 @@ export const ChatPanel = ({ shrink }: Props) => {
             switch (event.type) {
               case "token":
                 if (event.content) {
-                  setStreamingContent((prev) => prev + event.content);
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantId
+                        ? { ...m, content: m.content + event.content }
+                        : m
+                    )
+                  );
                 }
                 break;
               case "done":
-                setStreamingContent("");
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    id: `assistant-${Date.now()}`,
-                    role: "assistant",
-                    content: event.reply,
-                  },
-                ]);
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId
+                      ? { ...m, content: event.reply }
+                      : m
+                  )
+                );
+                setStreamingId(null);
                 break;
               case "error":
-                setStreamingContent("");
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    id: `error-${Date.now()}`,
-                    role: "assistant",
-                    content: event.message,
-                  },
-                ]);
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId
+                      ? { ...m, content: event.message }
+                      : m
+                  )
+                );
+                setStreamingId(null);
                 break;
             }
           },
@@ -78,16 +92,15 @@ export const ChatPanel = ({ shrink }: Props) => {
         );
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
-          setStreamingContent("");
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `error-${Date.now()}`,
-              role: "assistant",
-              content: "网络错误，请稍后重试。",
-            },
-          ]);
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: "网络错误，请稍后重试。" }
+                : m
+            )
+          );
         }
+        setStreamingId(null);
       } finally {
         setIsSending(false);
         abortRef.current = null;
@@ -100,7 +113,7 @@ export const ChatPanel = ({ shrink }: Props) => {
     <div className={`chat-panel ${shrink ? "chat-panel--shrink" : ""}`}>
       <MessageList
         messages={messages}
-        streamingContent={streamingContent}
+        streamingId={streamingId}
         historyCount={historyCount}
       />
       <ChatInput onSend={handleSend} disabled={isSending} />

@@ -5,11 +5,11 @@ import "./MessageList.css";
 
 interface Props {
   messages: ChatMessage[];
-  streamingContent: string;
+  streamingId: string | null;
   historyCount: number;
 }
 
-export const MessageList = ({ messages, streamingContent, historyCount }: Props) => {
+export const MessageList = ({ messages, streamingId, historyCount }: Props) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const isFirstRender = useRef(true);
@@ -21,7 +21,7 @@ export const MessageList = ({ messages, streamingContent, historyCount }: Props)
     } else {
       endRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, streamingContent]);
+  }, [messages]);
 
   return (
     <div className="message-list" ref={containerRef}>
@@ -31,21 +31,9 @@ export const MessageList = ({ messages, streamingContent, historyCount }: Props)
           message={msg}
           animate={index >= historyCount}
           animateIndex={index - historyCount}
+          streaming={msg.id === streamingId}
         />
       ))}
-      {streamingContent && (
-        <MessageBubble
-          key="streaming"
-          message={{
-            id: "streaming",
-            role: "assistant",
-            content: streamingContent,
-          }}
-          animate={false}
-          animateIndex={0}
-          streaming
-        />
-      )}
       <div ref={endRef} />
     </div>
   );
