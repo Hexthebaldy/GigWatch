@@ -1,4 +1,4 @@
-import type { DailyReport, MonitoringConfig, MonitoringPayload, SearchLogRecord } from "@gigwatch/shared";
+import type { DailyReport, MonitoringConfig, MonitoringPayload, SearchLogRecord, ShowStartEvent } from "@gigwatch/shared";
 import type { ChatMessage } from "./data/mockData";
 
 export type ChatStreamEvent =
@@ -47,6 +47,29 @@ export const api = {
       body: JSON.stringify(payload)
     });
     return expectJson<{ ok: boolean }>(res);
+  },
+
+  async queryEvents(params: {
+    keyword?: string;
+    city?: string;
+    artist?: string;
+    since?: string;
+    until?: string;
+    soldOut?: 0 | 1;
+    sort?: "recent" | "showTime";
+    limit?: number;
+  } = {}): Promise<ShowStartEvent[]> {
+    const qs = new URLSearchParams();
+    if (params.keyword) qs.set("keyword", params.keyword);
+    if (params.city) qs.set("city", params.city);
+    if (params.artist) qs.set("artist", params.artist);
+    if (params.since) qs.set("since", params.since);
+    if (params.until) qs.set("until", params.until);
+    if (params.soldOut !== undefined) qs.set("soldOut", String(params.soldOut));
+    if (params.sort) qs.set("sort", params.sort);
+    if (params.limit) qs.set("limit", String(params.limit));
+    const res = await fetch(`/api/events?${qs}`);
+    return expectJson<ShowStartEvent[]>(res);
   },
 
   async getChatMessages(limit = 30): Promise<ChatMessage[]> {

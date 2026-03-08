@@ -109,6 +109,67 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
     fetch: async (req) => {
       const url = new URL(req.url);
 
+      // Events query API — multi-dimension filtering
+      // GET /api/events?keyword=&city=&artist=&since=&until=&soldOut=0|1&sort=recent|showTime&limit=N
+      if (url.pathname === "/api/events" && req.method === "GET") {
+        const conditions: string[] = [];
+        const params: Array<string | number> = [];
+
+        const keyword = url.searchParams.get("keyword")?.trim();
+        if (keyword) {
+          conditions.push("(title LIKE ? OR performers LIKE ?)");
+          const like = `%${keyword}%`;
+          params.push(like, like);
+        }
+
+        const city = url.searchParams.get("city")?.trim();
+        if (city) {
+          conditions.push("city_name LIKE ?");
+          params.push(`%${city}%`);
+        }
+
+        const artist = url.searchParams.get("artist")?.trim();
+        if (artist) {
+          conditions.push("performers LIKE ?");
+          params.push(`%${artist}%`);
+        }
+
+        const since = url.searchParams.get("since")?.trim();
+        if (since) {
+          conditions.push("first_seen_at >= ?");
+          params.push(since);
+        }
+
+        const until = url.searchParams.get("until")?.trim();
+        if (until) {
+          conditions.push("first_seen_at <= ?");
+          params.push(until);
+        }
+
+        const soldOut = url.searchParams.get("soldOut");
+        if (soldOut === "0" || soldOut === "1") {
+          conditions.push("json_extract(raw_json, '$.soldOut') = ?");
+          params.push(Number(soldOut));
+        }
+
+        const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+        const sort = url.searchParams.get("sort") === "showTime" ? "show_time" : "last_seen_at";
+        const limit = Math.min(Math.max(Number(url.searchParams.get("limit")) || 30, 1), 100);
+        params.push(limit);
+
+        const stmt = db.prepare(`
+          SELECT raw_json FROM events
+          ${where}
+          ORDER BY ${sort} DESC
+          LIMIT ?
+        `);
+        const rows = stmt.all(...params) as Array<{ raw_json: string }>;
+        const events = rows.map((r) => JSON.parse(r.raw_json));
+        return new Response(JSON.stringify(events), {
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
       if (url.pathname === "/api/report/latest") {
         const report = loadLatestReport(db);
         return new Response(report ? JSON.stringify(report) : "null", {
