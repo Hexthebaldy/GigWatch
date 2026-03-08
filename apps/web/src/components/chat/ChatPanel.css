@@ -1,7 +1,23 @@
 .chat-panel {
   flex: 1;
+  min-width: 0;
+  height: 85vh;
+  padding-top: 4px;
   display: flex;
   flex-direction: column;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--chat-radius);
+  box-shadow:
+    0 1px 3px rgba(19, 39, 29, 0.04),
+    0 8px 32px rgba(19, 39, 29, 0.06);
   overflow: hidden;
-  min-height: 0;
+  animation: fade-in 0.5s var(--ease-out) both;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"),
+    linear-gradient(var(--paper), var(--paper));
+  transition: flex 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chat-panel--shrink {
+  flex: 2.5;
 }

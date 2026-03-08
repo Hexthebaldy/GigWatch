@@ -128,10 +128,15 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
           params.push(`%${city}%`);
         }
 
-        const artist = url.searchParams.get("artist")?.trim();
-        if (artist) {
-          conditions.push("performers LIKE ?");
-          params.push(`%${artist}%`);
+        // artists: comma-separated list, matched with OR
+        const artistsRaw = url.searchParams.get("artists")?.trim();
+        if (artistsRaw) {
+          const artists = artistsRaw.split(",").map((a) => a.trim()).filter(Boolean);
+          if (artists.length > 0) {
+            const clauses = artists.map(() => "performers LIKE ?").join(" OR ");
+            conditions.push(`(${clauses})`);
+            for (const a of artists) params.push(`%${a}%`);
+          }
         }
 
         const since = url.searchParams.get("since")?.trim();

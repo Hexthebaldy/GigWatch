@@ -52,7 +52,7 @@ export const api = {
   async queryEvents(params: {
     keyword?: string;
     city?: string;
-    artist?: string;
+    artists?: string[];
     since?: string;
     until?: string;
     soldOut?: 0 | 1;
@@ -62,7 +62,7 @@ export const api = {
     const qs = new URLSearchParams();
     if (params.keyword) qs.set("keyword", params.keyword);
     if (params.city) qs.set("city", params.city);
-    if (params.artist) qs.set("artist", params.artist);
+    if (params.artists?.length) qs.set("artists", params.artists.join(","));
     if (params.since) qs.set("since", params.since);
     if (params.until) qs.set("until", params.until);
     if (params.soldOut !== undefined) qs.set("soldOut", String(params.soldOut));

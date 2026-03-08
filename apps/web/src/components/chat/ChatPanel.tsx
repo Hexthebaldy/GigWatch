@@ -6,7 +6,11 @@ import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
 import "./ChatPanel.css";
 
-export const ChatPanel = () => {
+interface Props {
+  shrink: boolean;
+}
+
+export const ChatPanel = ({ shrink }: Props) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streamingContent, setStreamingContent] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -93,7 +97,7 @@ export const ChatPanel = () => {
   );
 
   return (
-    <div className="chat-panel">
+    <div className={`chat-panel ${shrink ? "chat-panel--shrink" : ""}`}>
       <MessageList
         messages={messages}
         streamingContent={streamingContent}
