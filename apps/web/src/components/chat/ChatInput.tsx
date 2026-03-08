@@ -40,7 +40,6 @@ export const ChatInput = ({ onSend, disabled }: Props) => {
             submit();
           }
         }}
-        disabled={disabled}
       />
       <button
         className="chat-input__send"
