@@ -1,5 +1,5 @@
 import { memo } from "react";
-import Markdown from "react-markdown";
+import Markdown from "markdown-to-jsx";
 import type { ChatMessage } from "../../data/mockData";
 import "./MessageBubble.css";
 
