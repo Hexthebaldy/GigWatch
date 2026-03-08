@@ -30,7 +30,6 @@ export const ChatInput = ({ onSend, disabled }: Props) => {
       <textarea
         ref={textareaRef}
         className="chat-input__field"
-        placeholder="输入消息..."
         rows={1}
         value={value}
         onChange={(e) => setValue(e.target.value)}
