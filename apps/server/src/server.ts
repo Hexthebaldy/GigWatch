@@ -106,7 +106,6 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
 
   const server = Bun.serve({
     port,
-    idleTimeout: 10, // seconds; LLM/chat requests may take >10s
     fetch: async (req) => {
       const url = new URL(req.url);
 
