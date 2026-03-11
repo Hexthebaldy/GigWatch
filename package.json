@@ -8,6 +8,7 @@
     "packages/*"
   ],
   "scripts": {
+    "prepare": "bun run scripts/install-git-hooks.ts",
     "init-db": "bun run apps/server/src/cli.ts init-db",
     "daily": "bun run apps/server/src/cli.ts daily",
     "serve": "bun run apps/server/src/cli.ts serve",

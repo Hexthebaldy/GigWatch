@@ -329,10 +329,12 @@ export class AgentRunner {
         }> = new Map();
 
         for await (const chunk of stream) {
-          if (signal?.aborted) break;
+          if (signal?.aborted) {
+            yield { type: "error", message: "已终止" };
+            return { reply: "已终止", messages, steps };
+          }
           const delta = chunk.choices[0]?.delta as Record<string, any> | undefined;
           if (!delta) continue;
-          console.log('#流式chunk: ', JSON.stringify(chunk));
           // reasoning_content: Kimi K2.5 等 thinking 模型的推理过程。
           // 不发给前端，但必须累积并写入 assistant 消息，
           // 否则下一轮调用 API 时会报 400（thinking 模式要求每条 assistant 消息都带此字段）。
@@ -398,6 +400,10 @@ export class AgentRunner {
         if (toolCalls.length > 0) {
           logInfo(`[AgentRunner] LLM requested ${toolCalls.length} tool call(s): ${toolCalls.map(tc => tc.name).join(", ")}`);
           for (const tc of toolCalls) {
+            if (signal?.aborted) {
+              yield { type: "error", message: "已终止" };
+              return { reply: "已终止", messages, steps };
+            }
             let toolArgs: Record<string, unknown> = {};
             try {
               toolArgs = JSON.parse(tc.arguments || "{}");
