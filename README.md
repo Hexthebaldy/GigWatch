@@ -1,6 +1,6 @@
 # GigWatch
 
-GigWatch 是一个基于 Bun + TypeScript 的演出监控系统：抓取 ShowStart（秀动）演出列表，落库到 SQLite，并通过 LLM Tool Calling 生成日报与对话式任务执行结果。
+GigWatch 是一个基于 Bun + TypeScript 的演出监控系统：可抓取 ShowStart（秀动）演出列表，落库到 SQLite，可联网搜索信息，并通过 LLM Tool Calling 生成日报与对话式任务执行结果。
 
 ## Monorepo 结构
 
