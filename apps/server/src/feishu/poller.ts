@@ -1,15 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { AppEnv } from "../config";
 import { logError, logInfo, logWarn } from "../utils/logger";
-import { ToolRegistry } from "../agent/tools/registry";
-import { showstartTool } from "../agent/tools/shows/showstart";
-import { createLoadEventsTool } from "../agent/tools/shows/database";
-import { createLatestReportTool } from "../agent/tools/shows/report";
-import { createSearchEventsTool } from "../agent/tools/shows/search";
-import { createRunMonitoringTool } from "../agent/tools/shows/runMonitoring";
-import { webFetchTool } from "../agent/tools/common/webFetch";
-import { webSearchTool } from "../agent/tools/common/webSearch";
-import { bashExecTool } from "../agent/tools/common/bashExec";
 import { ChatService, type IncomingChatMessage } from "../agent/chatService";
 import { FeishuClient, parseFeishuTextContent, type FeishuSenderId } from "../clients/feishu";
 
@@ -169,17 +160,7 @@ export const startFeishuLongConnection = async (db: Database, env: AppEnv) => {
 
   const sdk = await loadFeishuSdk();
 
-  const registry = new ToolRegistry();
-  registry.register(bashExecTool);
-  registry.register(webFetchTool);
-  registry.register(webSearchTool);
-  registry.register(showstartTool);
-  registry.register(createLoadEventsTool(db));
-  registry.register(createSearchEventsTool(db));
-  registry.register(createLatestReportTool(db));
-  registry.register(createRunMonitoringTool(db, env));
-
-  const chatService = new ChatService(db, registry, env);
+  const chatService = new ChatService(db, env);
   const feishuClient = new FeishuClient({
     appId: env.feishuAppId,
     appSecret: env.feishuAppSecret,

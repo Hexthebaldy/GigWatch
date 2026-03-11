@@ -5,21 +5,13 @@ import { getConfigPath } from "./config";
 import type { DailyReport, MonitoringConfig } from "./types";
 import { runDailyReport } from "./jobs/dailyReport";
 import { nowInTz } from "./utils/datetime";
-import { ToolRegistry } from "./agent/tools/registry";
-import { showstartTool } from "./agent/tools/shows/showstart";
-import { createLoadEventsTool } from "./agent/tools/shows/database";
-import { createLatestReportTool } from "./agent/tools/shows/report";
-import { createSearchEventsTool } from "./agent/tools/shows/search";
-import { createRunMonitoringTool } from "./agent/tools/shows/runMonitoring";
-import { webFetchTool } from "./agent/tools/common/webFetch";
-import { webSearchTool } from "./agent/tools/common/webSearch";
-import { bashExecTool } from "./agent/tools/common/bashExec";
 import { ChatService } from "./agent/chatService";
-import { createUpdateMonitoringConfigTool } from "./agent/tools/shows/config";
 import { showstartCities } from "./dictionary/showstartCities";
 import { showstartShowStyles } from "./dictionary/showstartShowStyles";
+import { MemoRepository } from "./memo/memoRepository";
 
 type ConfigRef = { current: MonitoringConfig };
+type MemoOperation = "add" | "remove";
 
 const loadLatestReport = (db: Database): DailyReport | null => {
   const stmt = db.prepare("SELECT report_json FROM reports ORDER BY run_at DESC LIMIT 1");
@@ -72,17 +64,8 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
     }
   };
   // Initialize ChatService for web chat
-  const registry = new ToolRegistry();
-  registry.register(bashExecTool);
-  registry.register(webFetchTool);
-  registry.register(webSearchTool);
-  registry.register(showstartTool);
-  registry.register(createLoadEventsTool(db));
-  registry.register(createSearchEventsTool(db));
-  registry.register(createLatestReportTool(db));
-  registry.register(createRunMonitoringTool(db, env));
-  registry.register(createUpdateMonitoringConfigTool());
-  const chatService = new ChatService(db, registry, env);
+  const memoRepository = new MemoRepository(db);
+  const chatService = new ChatService(db, env);
 
   let isRunning = false;
   let lastAutoDay = "";
@@ -187,6 +170,62 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
       if (url.pathname === "/api/logs") {
         const logs = loadLogs(db);
         return new Response(JSON.stringify(logs), { headers: { "Content-Type": "application/json" } });
+      }
+
+      if (url.pathname === "/api/memos" && req.method === "GET") {
+        const memos = memoRepository.listAll();
+        return new Response(JSON.stringify(memos), {
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      if (url.pathname === "/api/memos" && req.method === "POST") {
+        let body: any;
+        try {
+          body = await req.json();
+        } catch {
+          return new Response(JSON.stringify({ error: "invalid JSON body" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+
+        const operation = typeof body.operation === "string" ? body.operation : "";
+        const content = typeof body.content === "string" ? body.content.trim() : "";
+        if ((operation !== "add" && operation !== "remove") || !content) {
+          return new Response(JSON.stringify({ error: "operation must be add/remove and content must be non-empty" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+
+        try {
+          if ((operation as MemoOperation) === "add") {
+            const result = memoRepository.add(content);
+            return new Response(JSON.stringify({
+              operation,
+              status: result.created ? "created" : "already_exists",
+              memo: result.memo
+            }), {
+              headers: { "Content-Type": "application/json" }
+            });
+          }
+
+          const result = memoRepository.remove(content);
+          return new Response(JSON.stringify({
+            operation,
+            status: result.removed ? "removed" : "not_found",
+            memo: result.memo,
+            content
+          }), {
+            headers: { "Content-Type": "application/json" }
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: String(error) }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
       }
 
       if (url.pathname === "/api/run" && req.method === "POST") {

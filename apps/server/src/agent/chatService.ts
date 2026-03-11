@@ -6,16 +6,26 @@ import type { StoredChatMessage } from "./context/types";
 import { ChatRepository } from "./context/chatRepository";
 import { ContextManager } from "./context/contextManager";
 import { ContextSummarizer } from "./context/contextSummarizer";
-import type { ToolRegistry } from "./tools/registry";
+import { ToolRegistry } from "./tools/registry";
 import { AgentRunner } from "./runtime/agentRunner";
+import { bashExecTool } from "./tools/common/bashExec";
+import { createEditMemoTool } from "./tools/common/memo";
+import { createListMemosTool } from "./tools/common/memo";
+import { webFetchTool } from "./tools/common/webFetch";
+import { webSearchTool } from "./tools/common/webSearch";
+import { createUpdateMonitoringConfigTool } from "./tools/shows/config";
+import { createLoadEventsTool } from "./tools/shows/database";
+import { createLatestReportTool } from "./tools/shows/report";
+import { createRunMonitoringTool } from "./tools/shows/runMonitoring";
+import { createSearchEventsTool } from "./tools/shows/search";
+import { showstartTool } from "./tools/shows/showstart";
 
 const SYSTEM_PROMPT = [
   "你是 GigWatch 助手。用户用自然语言提出任务。你调用提供的工具完成任务。",
   "",
   "关键文件位置（相对项目根目录）：",
   "- 监控配置：./config/monitoring.json",
-  "- 城市字典：./src/dictionary/showstartCities.ts",
-  "- 演出风格字典：./src/dictionary/showstartShowStyles.ts",
+  "- 城市/演出风格的字典：./src/dictionary",
   "",
   "文件操作规范：",
   "- 读取/修改项目文件时，优先使用 bash_exec 工具。",
@@ -23,7 +33,7 @@ const SYSTEM_PROMPT = [
   "- bash_exec 仅支持 command + args，不支持 shell 管道和重定向。",
   "",
   "回答规范：",
-  "- 若缺少必要信息请先提问；若现有工具无法完成，请如实说明。"
+  "- 若缺少必要信息，请先提问；有任务需要完成时必须调用工具，严禁欺骗用户任务已完成。若无法完成任务，请如实说明。"
 ].join("\n");
 
 const trimStepPayload = (payload: Record<string, unknown>): Record<string, unknown> => {
@@ -52,6 +62,26 @@ export type ChatReply = {
   runId: number;
 };
 
+const createToolRegistry = (
+  db: Database,
+  env: AppEnv
+) => {
+  const registry = new ToolRegistry();
+  registry.register(bashExecTool);
+  registry.register(webFetchTool);
+  registry.register(webSearchTool);
+  registry.register(showstartTool);
+  registry.register(createLoadEventsTool(db));
+  registry.register(createSearchEventsTool(db));
+  registry.register(createLatestReportTool(db));
+  registry.register(createRunMonitoringTool(db, env));
+  registry.register(createEditMemoTool(db));
+  registry.register(createListMemosTool(db));
+  registry.register(createUpdateMonitoringConfigTool());
+
+  return registry;
+};
+
 export class ChatService {
   private repository: ChatRepository; //管数据库读写的持久化层
   private contextManager: ContextManager; //上下文管理层
@@ -59,9 +89,9 @@ export class ChatService {
 
   constructor(
     db: Database,
-    tools: ToolRegistry,
     env: AppEnv
   ) {
+    const tools = createToolRegistry(db, env);
     this.repository = new ChatRepository(db);
     this.contextManager = new ContextManager(
       this.repository,
