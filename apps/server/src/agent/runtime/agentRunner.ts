@@ -275,8 +275,10 @@ export class AgentRunner {
   // 最终 return 的是 AgentRuntimeResult（给 ChatService 用于持久化）。
   // ──────────────────────────────────────────────────────────────────────
   async *runTurnStreaming(
-    initialMessages: OpenAI.ChatCompletionMessageParam[]
+    initialMessages: OpenAI.ChatCompletionMessageParam[],
+    options?: { signal?: AbortSignal }
   ): AsyncGenerator<AgentStreamEvent, AgentRuntimeResult> {
+    const signal = options?.signal;
     if (!this.llm || !this.model) {
       const fallback = "未配置 OPENAI_API_KEY，无法理解自然语言任务。请先配置后重试。";
       yield { type: "error", message: fallback };
@@ -293,6 +295,7 @@ export class AgentRunner {
 
     let iterations = 0;
     while (iterations < MAX_ITERATIONS) {
+      if (signal?.aborted) break;
       iterations += 1;
       try {
         logInfo(`[AgentRunner] Streaming iteration ${iterations}, model=${this.model}, messages=${messages.length}`);
@@ -304,7 +307,8 @@ export class AgentRunner {
           tools: availableTools,
           tool_choice: "auto",
           temperature: this.temperature,
-          stream: true
+          stream: true,
+          ...(signal && { signal })
         });
 
         // ── 流式 chunk 累积 ──
@@ -325,9 +329,10 @@ export class AgentRunner {
         }> = new Map();
 
         for await (const chunk of stream) {
+          if (signal?.aborted) break;
           const delta = chunk.choices[0]?.delta as Record<string, any> | undefined;
           if (!delta) continue;
-          console.log('#流式chunk: ', chunk);
+          console.log('#流式chunk: ', JSON.stringify(chunk));
           // reasoning_content: Kimi K2.5 等 thinking 模型的推理过程。
           // 不发给前端，但必须累积并写入 assistant 消息，
           // 否则下一轮调用 API 时会报 400（thinking 模式要求每条 assistant 消息都带此字段）。
@@ -466,6 +471,10 @@ export class AgentRunner {
           return { reply, messages, steps };
         }
       } catch (error) {
+        if ((error as Error).name === "AbortError" || signal?.aborted) {
+          yield { type: "error", message: "已终止" };
+          return { reply: "已终止", messages, steps };
+        }
         const errorMsg = `LLM iteration failed: ${String(error)}`;
         logError(`[AgentRunner] ${errorMsg}`);
         steps.push({ stepType: "system_error", payload: { error: errorMsg } });
@@ -475,6 +484,10 @@ export class AgentRunner {
       }
     }
 
+    if (signal?.aborted) {
+      yield { type: "error", message: "已终止" };
+      return { reply: "已终止", messages, steps };
+    }
     logWarn("[AgentRunner] Reached max iterations without a final response (streaming)");
     const fallback = "任务处理未完成，请换种说法再试。";
     yield { type: "error", message: fallback };

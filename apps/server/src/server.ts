@@ -106,6 +106,7 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
 
   const server = Bun.serve({
     port,
+    idleTimeout: 10, // seconds; LLM/chat requests may take >10s
     fetch: async (req) => {
       const url = new URL(req.url);
 
@@ -252,16 +253,20 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
             const send = (event: string, data: unknown) => {
               controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
             };
+            const signal = req.signal;
             try {
-              const gen = chatService.handleIncomingMessageStream({
-                source: "web",
-                text
-              });
+              const gen = chatService.handleIncomingMessageStream(
+                { source: "web", text },
+                { signal }
+              );
               for await (const event of gen) {
+                if (signal?.aborted) break;
                 send(event.type, event);
               }
             } catch (err) {
-              send("error", { type: "error", message: String(err) });
+              if ((err as Error).name !== "AbortError") {
+                send("error", { type: "error", message: String(err) });
+              }
             } finally {
               controller.close();
             }

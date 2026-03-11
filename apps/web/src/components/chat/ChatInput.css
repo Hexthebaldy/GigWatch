@@ -58,3 +58,22 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+.chat-input__abort {
+  flex-shrink: 0;
+  height: 42px;
+  padding: 0 16px;
+  font-size: 14px;
+  color: var(--ink-soft, #666);
+  background: var(--paper-warm);
+  border: 1px solid var(--border);
+  border-radius: var(--input-radius);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.chat-input__abort:hover {
+  background: rgba(180, 60, 60, 0.08);
+  border-color: rgba(180, 60, 60, 0.3);
+  color: #a04040;
+}

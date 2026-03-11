@@ -4,9 +4,12 @@ import "./ChatInput.css";
 interface Props {
   onSend: (text: string) => void;
   disabled?: boolean;
+  /** When true, show an abort button to stop the current LLM stream */
+  showAbort?: boolean;
+  onAbort?: () => void;
 }
 
-export const ChatInput = ({ onSend, disabled }: Props) => {
+export const ChatInput = ({ onSend, disabled, showAbort, onAbort }: Props) => {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -40,6 +43,16 @@ export const ChatInput = ({ onSend, disabled }: Props) => {
           }
         }}
       />
+      {showAbort && onAbort && (
+        <button
+          type="button"
+          className="chat-input__abort"
+          onClick={onAbort}
+          aria-label="终止"
+        >
+          终止
+        </button>
+      )}
       <button
         className="chat-input__send"
         onClick={submit}
