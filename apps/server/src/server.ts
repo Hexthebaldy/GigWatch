@@ -16,6 +16,8 @@ import { webSearchTool } from "./agent/tools/common/webSearch";
 import { bashExecTool } from "./agent/tools/common/bashExec";
 import { ChatService } from "./agent/chatService";
 import { createUpdateMonitoringConfigTool } from "./agent/tools/shows/config";
+import { showstartCities } from "./dictionary/showstartCities";
+import { showstartShowStyles } from "./dictionary/showstartShowStyles";
 
 type ConfigRef = { current: MonitoringConfig };
 
@@ -196,6 +198,25 @@ export const startServer = (db: Database, config: MonitoringConfig, env: AppEnv)
           });
         }
         return new Response(JSON.stringify(report), {
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      // Dictionary API — returns city/showStyle code-name pairs
+      if (url.pathname.startsWith("/api/dictionary/") && req.method === "GET") {
+        const type = url.pathname.slice("/api/dictionary/".length);
+        const dictMap: Record<string, Array<{ code: string; name: string }>> = {
+          cities: showstartCities,
+          showStyles: showstartShowStyles,
+        };
+        const data = dictMap[type];
+        if (!data) {
+          return new Response(JSON.stringify({ error: "unknown dictionary type" }), {
+            status: 404,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+        return new Response(JSON.stringify(data), {
           headers: { "Content-Type": "application/json" }
         });
       }

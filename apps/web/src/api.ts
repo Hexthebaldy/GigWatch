@@ -1,5 +1,4 @@
-import type { DailyReport, MonitoringConfig, MonitoringPayload, SearchLogRecord, ShowStartEvent } from "@gigwatch/shared";
-import type { ChatMessage } from "./data/mockData";
+import type { ChatMessage, DailyReport, DictEntry, MonitoringConfig, MonitoringPayload, SearchLogRecord, ShowStartEvent } from "@gigwatch/shared";
 
 export type ChatStreamEvent =
   | { type: "token"; content: string; userMessageId?: number }
@@ -39,6 +38,10 @@ export const api = {
   async getConfig() {
     const res = await fetch("/api/config");
     return expectJson<MonitoringConfig>(res);
+  },
+  async getDictionary(type: "cities" | "showStyles") {
+    const res = await fetch(`/api/dictionary/${type}`);
+    return expectJson<DictEntry[]>(res);
   },
   async saveMonitoring(payload: MonitoringPayload) {
     const res = await fetch("/api/config/monitoring", {

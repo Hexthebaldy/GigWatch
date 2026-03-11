@@ -1,0 +1,250 @@
+.config-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+}
+
+.config-backdrop--visible {
+  opacity: 1;
+}
+
+.config-dialog {
+  width: 480px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.config-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.config-dialog__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+.config-dialog__close {
+  color: var(--ink-muted);
+  padding: 4px;
+  border-radius: 4px;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.config-dialog__close:hover {
+  color: var(--ink);
+  background: var(--paper-warm);
+}
+
+.config-dialog__body {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.config-dialog__loading {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+/* Toast */
+.config-toast {
+  position: fixed;
+  top: 32px;
+  left: 50%;
+  translate: -50% 0;
+  z-index: 200;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  animation: toast-in 0.2s ease-out, toast-out 0.25s ease-in 1.75s forwards;
+  pointer-events: none;
+}
+
+.config-toast--success {
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.config-toast--error {
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; translate: -50% -8px; }
+  to   { opacity: 1; translate: -50% 0; }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.config-field__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.config-field__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Tag pill */
+.config-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px 3px 10px;
+  background: var(--paper-deep);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-size: 12px;
+  color: var(--ink);
+  line-height: 1;
+  animation: fade-in 0.15s ease-out;
+}
+
+.config-tag__text {
+  white-space: nowrap;
+}
+
+.config-tag__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--ink-muted);
+  border-radius: 50%;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.config-tag__remove:hover {
+  background: var(--border-strong);
+  color: var(--ink);
+}
+
+/* Dropdown select for dictionary fields */
+.config-field__select {
+  padding: 3px 8px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--ink-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.config-field__select:hover {
+  border-color: var(--ink-soft);
+  color: var(--ink);
+}
+
+.config-field__select:focus {
+  outline: none;
+  border-color: var(--ink-soft);
+}
+
+/* Text input for free-form fields */
+.config-field__text-input {
+  padding: 3px 10px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--ink);
+  background: transparent;
+  min-width: 120px;
+  transition: border-color var(--transition-fast);
+}
+
+.config-field__text-input::placeholder {
+  color: var(--ink-faint);
+}
+
+.config-field__text-input:focus {
+  outline: none;
+  border-color: var(--ink-soft);
+}
+
+/* Footer */
+.config-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.config-dialog__btn {
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 4px;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.config-dialog__btn--cancel {
+  color: var(--ink-muted);
+}
+
+.config-dialog__btn--cancel:hover {
+  background: var(--paper-warm);
+  color: var(--ink);
+}
+
+.config-dialog__btn--save {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.config-dialog__btn--save:hover {
+  opacity: 0.85;
+}
+
+.config-dialog__btn--save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

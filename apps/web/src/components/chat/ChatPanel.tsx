@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { ChatMessage } from "../../data/mockData";
+import type { ChatMessage } from "@gigwatch/shared";
 import type { ChatStreamEvent } from "../../api";
 import { api } from "../../api";
 import { MessageList } from "./MessageList";

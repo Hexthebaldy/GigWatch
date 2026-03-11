@@ -1,4 +1,4 @@
-import { LayoutSidebar, Calendar } from "../ui/Icon";
+import { LayoutSidebar, Calendar, Bell } from "../ui/Icon";
 import "./Sidebar.css";
 
 interface Props {
@@ -6,9 +6,10 @@ interface Props {
   onToggle: () => void;
   onShowEvents: () => void;
   eventsOpen: boolean;
+  onShowConfig: () => void;
 }
 
-export const Sidebar = ({ collapsed, onToggle, onShowEvents, eventsOpen }: Props) => (
+export const Sidebar = ({ collapsed, onToggle, onShowEvents, eventsOpen, onShowConfig }: Props) => (
   <aside className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}>
     <button className="sidebar__toggle" onClick={onToggle}>
       <span className="sidebar__brand">GIG WATCH</span>
@@ -23,6 +24,10 @@ export const Sidebar = ({ collapsed, onToggle, onShowEvents, eventsOpen }: Props
         >
           <Calendar />
           <span>演出</span>
+        </button>
+        <button className="sidebar__item" onClick={onShowConfig}>
+          <Bell />
+          <span>订阅</span>
         </button>
       </nav>
     )}

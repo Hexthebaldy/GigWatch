@@ -1,6 +1,6 @@
 import { memo } from "react";
 import Markdown from "markdown-to-jsx";
-import type { ChatMessage } from "../../data/mockData";
+import type { ChatMessage } from "@gigwatch/shared";
 import "./MessageBubble.css";
 
 interface Props {

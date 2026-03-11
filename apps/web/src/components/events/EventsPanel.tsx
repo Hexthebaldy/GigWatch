@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { ShowStartEvent } from "@gigwatch/shared";
 import { api } from "../../api";
+import { useStore } from "../../store";
 import { Close } from "../ui/Icon";
 import { Thumb } from "../ui/Thumb";
 import "./EventsPanel.css";
@@ -13,18 +14,12 @@ interface Props {
 }
 
 export const EventsPanel = ({ open, onClose }: Props) => {
+  const { monitoring } = useStore();
+  const focusArtists = monitoring.focusArtists;
   const [tab, setTab] = useState<Tab>("recent");
   const [events, setEvents] = useState<ShowStartEvent[]>([]);
   const [loading, setLoading] = useState(false);
-  const [focusArtists, setFocusArtists] = useState<string[]>([]);
   const [hasFetched, setHasFetched] = useState(false);
-
-  // Load focusArtists from config once
-  useEffect(() => {
-    api.getConfig()
-      .then((cfg) => setFocusArtists(cfg.monitoring.focusArtists || []))
-      .catch(console.error);
-  }, []);
 
   const fetchEvents = useCallback(async (t: Tab) => {
     setLoading(true);

@@ -70,3 +70,14 @@ export type MonitoringPayload = {
   showStyles: string[];
   keywords: string[];
 };
+
+export type DictEntry = {
+  code: string;
+  name: string;
+};
+
+export type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+};

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { ChatMessage } from "../../data/mockData";
+import type { ChatMessage } from "@gigwatch/shared";
 import { MessageBubble } from "./MessageBubble";
 import "./MessageList.css";
 
