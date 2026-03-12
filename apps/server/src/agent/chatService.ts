@@ -199,7 +199,8 @@ export class ChatService {
   }
 
   async *handleIncomingMessageStream(
-    message: IncomingChatMessage
+    message: IncomingChatMessage,
+    options?: { signal?: AbortSignal }
   ): AsyncGenerator<AgentStreamEvent & { userMessageId?: number }> {
     const userText = (message.text || "").trim();
     if (!userText) {
@@ -237,9 +238,10 @@ export class ChatService {
         model: this.runner.model
       });
 
-      const gen = this.runner.runTurnStreaming(prompt.messages);
+      const gen = this.runner.runTurnStreaming(prompt.messages, options);
       let runtimeResult;
       while (true) {
+        if (options?.signal?.aborted) break;
         const { value, done } = await gen.next();
         if (done) {
           runtimeResult = value;
@@ -247,8 +249,13 @@ export class ChatService {
         }
         yield value;
       }
+      if (options?.signal?.aborted) {
+        this.repository.finishAgentRun(run.id, "failed", "已终止");
+        yield { type: "error", message: "已终止" };
+        return;
+      }
 
-      runtimeResult.steps.forEach((step, index) => {
+      runtimeResult?.steps.forEach((step, index) => {
         this.repository.insertAgentStep(run.id, index + 1, {
           ...step,
           payload: trimStepPayload(step.payload)
@@ -257,7 +264,7 @@ export class ChatService {
 
       this.repository.insertMessage({
         role: "assistant",
-        content: runtimeResult.reply,
+        content: runtimeResult?.reply || "",
         source: "agent",
         externalChatId: message.externalChatId,
         externalUserId: message.externalUserId,
@@ -271,9 +278,9 @@ export class ChatService {
       });
 
       const isFailedReply =
-        runtimeResult.reply.includes("处理请求时出现错误") ||
-        runtimeResult.reply.includes("任务处理未完成") ||
-        runtimeResult.reply.includes("未配置 OPENAI_API_KEY");
+        runtimeResult?.reply?.includes("处理请求时出现错误") ||
+        runtimeResult?.reply?.includes("任务处理未完成") ||
+        runtimeResult?.reply?.includes("未配置 OPENAI_API_KEY");
       this.repository.finishAgentRun(run.id, isFailedReply ? "failed" : "success");
 
       await this.contextManager.maybeCompactHistory();

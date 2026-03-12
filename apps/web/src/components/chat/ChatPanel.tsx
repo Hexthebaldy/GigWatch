@@ -116,7 +116,12 @@ export const ChatPanel = ({ shrink }: Props) => {
         streamingId={streamingId}
         historyCount={historyCount}
       />
-      <ChatInput onSend={handleSend} disabled={isSending} />
+      <ChatInput
+        onSend={handleSend}
+        disabled={isSending}
+        showAbort={isSending}
+        onAbort={() => abortRef.current?.abort()}
+      />
     </div>
   );
 };
