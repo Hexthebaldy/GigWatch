@@ -4,84 +4,106 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GigWatch is a Bun.js-based monitoring agent that scrapes ShowStart (秀动)演出列表、保存结果到 SQLite，并生成模型驱动的日报。当前仅保留 Web、Telegram、Feishu 三个入口。
+GigWatch is a Bun.js monorepo that scrapes ShowStart (秀动) event listings, stores results in SQLite, and provides an AI agent for natural-language interaction. Entrypoints: Web UI, Telegram bot, Feishu bot.
+
+## Monorepo Structure
+
+```
+apps/server/   — Bun backend: HTTP server, SQLite, scraper, LLM agent, bot integrations
+apps/web/      — React 18 + Vite frontend: chat UI, event search, config editor
+packages/shared/ — Shared TypeScript types (no runtime deps)
+config/        — monitoring.json (scrape queries, focus artists)
+```
+
+Workspaces: `apps/*` and `packages/*`. Import shared types via `@gigwatch/shared`.
 
 ## Commands
 
-### Development
 ```bash
-# Install dependencies
-bun install
+bun install                # Install all workspace dependencies
 
-# Type-check the codebase
-bun run lint
-```
+# Server
+bun run serve              # Start backend (port 9826) with daily 06:00 scheduler
+bun run serve:watch        # Same, with file watching
+bun run init-db            # Initialize SQLite schema
+bun run daily              # Run daily scrape+report once
 
-### Entrypoints
-```bash
 # Web frontend
-bun run web
+bun run dev:web            # Vite dev server (port 5173, proxies /api → localhost:9826)
+bun run build:web          # Production build
 
-# Telegram bot long polling
-bun run telegram
+# Bots
+bun run telegram           # Telegram long-polling bot
+bun run feishu             # Feishu long-connection bot
 
-# Feishu bot long connection
-bun run feishu
+# Quality
+bun run lint               # TypeScript type-check (bun --check on server files)
+bun run typecheck:web      # TypeScript check for web app
+
+# Tests
+bun run test               # Core tests (tools + agent)
+bun run test:tools         # Tool tests only
+bun run test:agent         # Agent tests only
+bun run test:telegram      # Telegram integration tests
+bun run test:llm           # LLM agent tests (requires API key)
+bun run test:all           # All tests including integration
+
+# Run a single test file
+bun run apps/server/test/<file>.test.ts
 ```
 
 ## Architecture
 
 ### Data Flow
-1. **Queries** (`config/monitoring.json`) define ShowStart列表抓取参数：focusArtists、cityCodes、showStyles、keywords 会自动展开为查询
-2. **ShowStart scraper** (`src/clients/showstart.ts`) 请求列表页、解析 `window.__NUXT__` 中的 `listData`
-3. **Database** (`src/db/`) 存储演出数据与搜索日志，并存档日报
-4. **Report generation** (`src/jobs/dailyReport.ts`) 汇总最近窗口内的演出，匹配关注艺人，生成摘要
-5. **Web server** (`src/server.ts`) 提供简单 UI + API 触发抓取、查看最新日报与搜索日志
+1. **Monitoring config** (`config/monitoring.json`) defines scrape queries: focusArtists, cityCodes, showStyles, keywords expand into individual queries
+2. **ShowStart scraper** (`apps/server/src/clients/showstart.ts`) fetches listing pages, parses `window.__NUXT__` payload for `listData`
+3. **SQLite database** (`apps/server/src/db/`) stores events, search logs, reports, chat history, memos, agent runs
+4. **Daily report** (`apps/server/src/jobs/dailyReport.ts`) scrapes all queries, upserts events, generates LLM summary
+5. **HTTP server** (`apps/server/src/server.ts`) serves API + static web build; schedules daily job at 06:00
 
-### Key Components
+### AI Agent System
+The agent uses OpenAI-compatible function calling (supports Kimi, DeepSeek, MiniMax, GLM models):
 
-**Configuration System** (`src/config.ts`, `src/types.ts`)
-- Env via `loadEnv()`: `APP_TIMEZONE`, `DB_PATH`, `APP_PORT`, `CONFIG_PATH`
-- Monitoring config via `loadConfig()` from `config/monitoring.json`
-- Queries are explicit objects (one of cityCode/keyword/showStyle per query), no implicit default profiles
+- **ChatService** (`apps/server/src/agent/chatService.ts`) — orchestrates chat: manages tool registry, streams SSE responses, persists messages
+- **AgentRunner** (`apps/server/src/agent/runtime/agentRunner.ts`) — executes the tool-calling loop (max 50 iterations), compacts large results
+- **Tools** (`apps/server/src/agent/tools/`) — `base.ts` defines the interface; `registry.ts` manages registration; tools in `common/` and `shows/` subdirectories
+- **ContextManager** — summarizes long conversations to fit model context windows
 
-**ShowStart Scraper** (`src/clients/showstart.ts`)
-- Builds list URL from cityCode/keyword/showStyle (only one per request) or accepts custom URL
-- Fetches HTML with headers, extracts `window.__NUXT__` block, evaluates in a sandbox, reads `data[0].listData`
-- Paginates pageNo up to 20, pageSize default 50; stops when page is empty or < pageSize
-- Normalizes items and fills event URL (`https://www.showstart.com/event/{id}`)
+System prompt language is Chinese. The agent has tools for: shell commands, web fetch/search, memo CRUD, ShowStart scraping, event DB queries, config updates, report reading, Telegram messaging, dictionary lookups, file reading.
 
-**Database Schema** (`src/db/schema.ts`)
-- `events` table: stores ShowStart event fields + timestamps, unique on `event_id`
-- `search_logs` table: records each query run with url, cityCode/keyword, run time, result count
-- `reports` table: archives generated report JSON
+### Web Frontend
+React 18 SPA with Vite. Key areas:
+- `components/chat/` — ChatPanel with SSE streaming, MessageList, ChatInput
+- `components/events/` — EventsPanel for multi-dimensional event queries
+- `components/config/` — ConfigDialog for editing monitoring.json
+- `store.tsx` — React Context state management (cities, showStyles, config)
+- `api.ts` — fetch-based API client
 
-**Report Generation** (`src/jobs/dailyReport.ts`)
-- For each configured query, scrape ShowStart, upsert events, log the search
-- Generate report via model (Kimi/OpenAI-compatible); fallback is empty summary（不再输出城市高频高亮）
+Vite dev server proxies `/api/*` to `localhost:9826`.
 
-**Web UI** (`src/server.ts`)
-- Endpoints: `GET /api/report/latest`, `GET /api/logs`, `POST /api/run`, `GET /api/config`, `POST /api/config/monitoring`
-- `GET /` serves a lightweight dashboard to触发抓取/查看日报/编辑监听；带每日 06:00 自动调度（服务器时区）
+### API Endpoints
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/events` | GET | Query events (keyword, city, artists, dates, soldOut, sort) |
+| `/api/report/latest` | GET | Latest daily report |
+| `/api/logs` | GET | Recent search logs |
+| `/api/memos` | GET/POST | List/add/remove memos |
+| `/api/run` | POST | Trigger immediate scrape+report |
+| `/api/dictionary/{type}` | GET | City or showStyle dictionary |
+| `/api/config` | GET | Current monitoring config |
+| `/api/config/monitoring` | POST | Update monitoring config |
+| `/api/chat/messages` | GET | Chat history (?limit=N) |
+| `/api/chat` | POST | Chat with SSE streaming |
 
-**CLI Entrypoint** (`src/cli.ts`)
-- Unified command entry for `init-db`, `daily`, `serve`, `telegram`, `feishu`
-
-### Timezone Handling
-- All timestamps use the configured timezone (default: Asia/Shanghai)
-- `nowInTz()` and `toIso()` utilities in `src/utils/datetime.ts` handle timezone-aware formatting
-- Report window (default 24 hours) filters projects by `first_seen_at` timestamp
+### Database
+SQLite via `bun:sqlite`. Tables: `events`, `search_logs`, `reports`, `memos`, `chat_messages`, `chat_context_summaries`, `agent_runs`, `agent_run_steps`. No migration system — schema changes require updating `initSchema()` in `apps/server/src/db/schema.ts` and manual ALTER or re-init.
 
 ### Environment Variables
-Env:
-- `APP_TIMEZONE` (default Asia/Shanghai)
-- `DB_PATH` (default ./data/gigwatch.sqlite)
-- `APP_PORT` (default 3000, for Web UI)
-- `CONFIG_PATH` (override config file)
+See `.env.example`. Key vars:
+- `APP_TIMEZONE` (default: Asia/Shanghai), `DB_PATH` (default: ./data/gigwatch.sqlite), `APP_PORT` (default: 9826)
+- `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL` — LLM config (OpenAI-compatible APIs)
+- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` — Telegram bot
+- `FEISHU_APP_ID`, `FEISHU_APP_SECRET` — Feishu bot
 
-## Important Implementation Details
-
-### Database Migrations
-There is no migration system. Schema changes require:
-1. Updating `initSchema()` in `src/db/schema.ts`
-2. Manual handling of existing databases (backup and re-init, or manual ALTER statements)
+### Timezone Handling
+All timestamps use configured timezone (default Asia/Shanghai). Utilities `nowInTz()` and `toIso()` in `apps/server/src/utils/datetime.ts`.
