@@ -1,4 +1,8 @@
+import { jsonSchema, type Tool as VercelTool } from "ai";
 import type { Tool } from "./base";
+import { compactToolResult } from "./compactResult";
+
+type AnyVercelTool = VercelTool<any, any>;
 
 export class ToolRegistry {
   private tools: Map<string, Tool> = new Map();
@@ -26,22 +30,19 @@ export class ToolRegistry {
     return Array.from(this.tools.keys());
   }
 
-  //把Tool对象转换为LLM API要求的格式
-  toFunctionSchemas(): Array<{
-    type: "function";
-    function: {
-      name: string;
-      description: string;
-      parameters: any;
-    };
-  }> {
-    return this.getAll().map((tool) => ({
-      type: "function" as const,
-      function: {
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.parameters
-      }
-    }));
+  // 转换为 Vercel AI SDK 的 tool 格式
+  toVercelTools(): Record<string, AnyVercelTool> {
+    const result: Record<string, AnyVercelTool> = {};
+    for (const t of this.getAll()) {
+      result[t.name] = {
+        description: t.description,
+        inputSchema: jsonSchema(t.parameters),
+        execute: async (args: any) => {
+          const raw = await t.execute(args);
+          return compactToolResult(raw);
+        },
+      };
+    }
+    return result;
   }
 }

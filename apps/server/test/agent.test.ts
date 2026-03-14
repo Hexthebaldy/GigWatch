@@ -8,7 +8,7 @@
  * - 返回结构完整性
  */
 
-import type OpenAI from "openai";
+import type { ModelMessage } from "ai";
 import { AgentRunner } from "../src/agent/runtime/agentRunner";
 import { ToolRegistry } from "../src/agent/tools/registry";
 import type { AppEnv } from "../src/config";
@@ -30,7 +30,7 @@ if (runner.getModel() !== undefined) {
 }
 console.log("✅ getModel returns undefined as expected");
 
-const initialMessages: OpenAI.ChatCompletionMessageParam[] = [
+const initialMessages: ModelMessage[] = [
   { role: "system", content: "你是测试助手" },
   { role: "user", content: "请帮我总结今日演出" }
 ];

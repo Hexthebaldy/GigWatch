@@ -14,9 +14,11 @@
     "test": "bun run --cwd ../.. test:server"
   },
   "dependencies": {
+    "@ai-sdk/moonshotai": "^2.0.10",
+    "@ai-sdk/openai": "^3.0.41",
     "@gigwatch/shared": "workspace:*",
     "@larksuiteoapi/node-sdk": "^1.54.0",
-    "openai": "^4.56.0"
+    "ai": "^6.0.116"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

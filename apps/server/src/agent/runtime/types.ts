@@ -1,4 +1,4 @@
-import type OpenAI from "openai";
+import type { ModelMessage } from "ai";
 
 export type AgentRuntimeStep = {
   stepType: "assistant_message" | "tool_call" | "tool_result" | "system_error";
@@ -8,7 +8,7 @@ export type AgentRuntimeStep = {
 
 export type AgentRuntimeResult = {
   reply: string;
-  messages: OpenAI.ChatCompletionMessageParam[];
+  messages: ModelMessage[];
   steps: AgentRuntimeStep[];
 };
 

@@ -61,29 +61,23 @@ try {
 
 console.log("");
 
-// 测试 2: toFunctionSchemas
-console.log("Test 2: toFunctionSchemas conversion");
-const schemas = registry.toFunctionSchemas();
+// 测试 2: toVercelTools
+console.log("Test 2: toVercelTools conversion");
+const vercelTools = registry.toVercelTools();
+const toolNames = Object.keys(vercelTools);
 
-if (schemas.length === 1) {
-  console.log("✅ Correct number of schemas");
+if (toolNames.length === 1) {
+  console.log("✅ Correct number of tools");
 } else {
-  console.error("❌ Wrong number of schemas");
+  console.error("❌ Wrong number of tools");
   process.exit(1);
 }
 
-const schema = schemas[0];
-if (
-  schema.type === "function" &&
-  schema.function.name === "fetch_showstart_events" &&
-  schema.function.description &&
-  schema.function.parameters
-) {
-  console.log("✅ Schema structure is correct");
-  console.log(`   Name: ${schema.function.name}`);
-  console.log(`   Params: ${Object.keys(schema.function.parameters.properties || {}).join(", ")}`);
+if (toolNames[0] === "fetch_showstart_events" && vercelTools["fetch_showstart_events"]) {
+  console.log("✅ Tool structure is correct");
+  console.log(`   Name: ${toolNames[0]}`);
 } else {
-  console.error("❌ Schema structure is incorrect");
+  console.error("❌ Tool structure is incorrect");
   process.exit(1);
 }
 

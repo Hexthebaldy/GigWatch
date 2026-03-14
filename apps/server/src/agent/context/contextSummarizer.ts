@@ -1,4 +1,5 @@
-import OpenAI from "openai";
+import { generateText } from "ai";
+import { createMoonshotAI, type MoonshotAIProvider } from "@ai-sdk/moonshotai";
 import { logWarn } from "../../utils/logger";
 import { resolveModelTemperature } from "../../clients/modelTemperature";
 import type { StoredChatMessage } from "./types";
@@ -25,16 +26,16 @@ const fallbackSummarize = (existingSummary: string, messages: StoredChatMessage[
 };
 
 export class ContextSummarizer {
-  private client?: OpenAI;
+  private provider?: MoonshotAIProvider;
   private model?: string;
   private temperature = 1;
 
   constructor(input: { apiKey?: string; baseUrl?: string; model?: string; requestedTemperature?: number }) {
     // 无 API Key 时仅启用本地摘要兜底，不初始化远程客户端。
     if (!input.apiKey) return;
-    this.client = new OpenAI({
+    this.provider = createMoonshotAI({
       apiKey: input.apiKey,
-      baseURL: input.baseUrl
+      baseURL: input.baseUrl,
     });
     this.model = input.model;
     this.temperature = resolveModelTemperature(input.model, input.requestedTemperature, 1);
@@ -43,7 +44,7 @@ export class ContextSummarizer {
   async summarize(existingSummary: string, messages: StoredChatMessage[]): Promise<string> {
     // 增量摘要入口：优先调用模型生成；失败或空结果时自动回退本地策略。
     if (!messages.length) return existingSummary;
-    if (!this.client || !this.model) {
+    if (!this.provider || !this.model) {
       return fallbackSummarize(existingSummary, messages);
     }
 
@@ -53,22 +54,22 @@ export class ContextSummarizer {
       .join("\n");
 
     try {
-      const response = await this.client.chat.completions.create({
-        model: this.model,
+      const result = await generateText({
+        model: this.provider(this.model),
         temperature: this.temperature,
         messages: [
           {
-            role: "system",
+            role: "system" as const,
             content:
               "你负责维护会话长期记忆。请输出简洁中文摘要，保留：用户偏好、已确认事实、待办事项、决策结论。禁止杜撰。控制在 1000 字内。"
           },
           {
-            role: "user",
+            role: "user" as const,
             content: `已有摘要：\n${existingSummary || "（无）"}\n\n新增对话片段：\n${transcript}`
           }
         ]
       });
-      const content = response.choices[0]?.message?.content?.trim();
+      const content = result.text?.trim();
       if (!content) {
         return fallbackSummarize(existingSummary, messages);
       }

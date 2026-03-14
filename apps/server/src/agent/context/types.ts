@@ -1,4 +1,4 @@
-import type OpenAI from "openai";
+import type { ModelMessage } from "ai";
 
 export type ChatRole = "system" | "user" | "assistant" | "tool";
 
@@ -40,7 +40,7 @@ export type AgentStep = {
 };
 
 export type PromptBuildResult = {
-  messages: OpenAI.ChatCompletionMessageParam[];
+  messages: ModelMessage[];
   modelContextWindow: number;
   promptTokenBudget: number;
   estimatedPromptTokens: number;
