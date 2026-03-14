@@ -283,7 +283,6 @@ const collectMonitoringData = async (db: Database, config: MonitoringConfig): Pr
   let totalEventsFetched = 0;
   for (const query of queries) {
     try {
-      logInfo(`Fetching query "${query.name}" ...`);
       const { events, url } = await fetchShowStartEvents({
         cityCode: query.cityCode,
         keyword: query.keyword,
@@ -294,13 +293,11 @@ const collectMonitoringData = async (db: Database, config: MonitoringConfig): Pr
       });
 
       const sample = events.slice(0, 3).map((e) => e.title || "无标题").join(" | ");
-      logInfo(`Query "${query.name}" fetched ${events.length} events, sample=[${sample}], url=${url}`);
 
       for (const event of events) {
         upsertEvent(db, event, fetchedAt);
       }
       totalEventsFetched += events.length;
-      logInfo(`Query "${query.name}" success, events=${events.length}, url=${url}`);
       logSearch(db, { name: query.name, url, cityCode: query.cityCode, keyword: query.keyword }, fetchedAt, events.length);
     } catch (error) {
       logError(`Query "${query.name}" failed: ${String(error)}`);

@@ -86,14 +86,6 @@ export class AgentRunner {
     while (iterations < MAX_ITERATIONS) {
       iterations += 1;
       try {
-        logInfo(
-          `[AgentRunner] LLM context (iteration ${iterations}) ${JSON.stringify({
-            model: this.model,
-            temperature: this.temperature,
-            messages
-          })}`
-        );
-
         // ── 调用 LLM ──
         // tool_choice: "auto" 表示由模型自行决定是否调用工具。
         // 模型会根据 messages 上下文和可用工具列表，决定：
@@ -299,7 +291,6 @@ export class AgentRunner {
       iterations += 1;
       try {
         logInfo(`[AgentRunner] Streaming iteration ${iterations}, model=${this.model}, messages=${messages.length}`);
-        logInfo(`[AgentRunner] Full context:\n${JSON.stringify(messages, null, 2)}`);
 
         const stream = await this.llm.chat.completions.create({
           model: this.model,
